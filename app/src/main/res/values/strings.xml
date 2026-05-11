@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">BudgetBuddy</string>
+    <string name="title_activity_login">Login</string>
+    <string name="title_activity_splash">Splash</string>
+    <string name="title_activity_dashboard">Dashboard</string>
+    <string name="title_activity_register">Register</string>
+    <string name="title_activity_forget_password">ForgetPassword</string>
+    <string name="title_activity_otpactivity">OTPActivity</string>
+    <string name="title_activity_new_password">NewPasswordActivity</string>
+</resources>
