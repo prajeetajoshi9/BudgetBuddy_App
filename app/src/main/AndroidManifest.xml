@@ -11,8 +11,100 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BudgetBuddy">
+
         <activity
-            android:name=".NewPasswordActivity"
+            android:name=".view.AdminReportActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_report"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.NotificationActivity"
+            android:exported="true"
+            android:label="NotificationActivity"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.AdminManageUsersActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_manage_users"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.AdminDashboardActivity"
+            android:exported="true"
+            android:label="@string/title_activity_admin_dashboard"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.UserProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_user_profile"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.ReportActivity"
+            android:exported="true"
+            android:label="@string/title_activity_report"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.ExpenseActivity"
+            android:exported="true"
+            android:label="ExpenseActivity"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.BudgetActivity"
+            android:exported="true"
+            android:label="@string/title_activity_add_budget"
+            android:theme="@style/Theme.BudgetBuddy">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".view.NewPasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_new_password"
             android:theme="@style/Theme.BudgetBuddy">
@@ -23,7 +115,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".OTPActivity"
+            android:name=".view.OTPActivity"
             android:exported="true"
             android:label="@string/title_activity_otpactivity"
             android:theme="@style/Theme.BudgetBuddy">
@@ -34,7 +126,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".DashboardActivity"
+            android:name=".view.UserDashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_dashboard"
             android:theme="@style/Theme.BudgetBuddy">
@@ -45,7 +137,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ForgetPassword"
+            android:name=".view.ForgetPasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_forget_password"
             android:theme="@style/Theme.BudgetBuddy">
@@ -56,7 +148,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Register"
+            android:name=".view.RegistrationActivity"
             android:exported="true"
             android:label="@string/title_activity_register"
             android:theme="@style/Theme.BudgetBuddy">
@@ -67,18 +159,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Dashboard"
-            android:exported="true"
-            android:label="@string/title_activity_dashboard"
-            android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".Login"
+            android:name=".view.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.BudgetBuddy">
@@ -89,7 +170,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Splash"
+            android:name=".view.SplashActivity"
             android:exported="true"
             android:label="@string/title_activity_splash"
             android:theme="@style/Theme.BudgetBuddy">
