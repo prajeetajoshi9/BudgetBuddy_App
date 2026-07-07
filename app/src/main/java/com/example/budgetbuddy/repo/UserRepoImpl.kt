@@ -1,15 +1,15 @@
 package com.example.budgetbuddy.repo
 
 import com.example.budgetbuddy.model.UserModel
-import com.example.budgetbuddy.repo.UserRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
 class UserRepoImpl : UserRepo {
 
     private val auth = FirebaseAuth.getInstance()
-    private val database = FirebaseDatabase.getInstance()
-    private val userRef = database.reference.child("users")
+    private val userRef = FirebaseDatabase.getInstance()
+        .reference
+        .child("users")
 
     override fun login(
         email: String,
@@ -24,11 +24,14 @@ class UserRepoImpl : UserRepo {
                     .addOnSuccessListener { snapshot ->
                         val user = snapshot.getValue(UserModel::class.java)
 
-                        if (user?.blocked == true) {
-                            auth.signOut()
-                            callback(false, "Your account is blocked by admin", "")
-                        } else {
-                            callback(true, "Login successful", user?.role ?: "user")                        }
+                        when {
+                            user == null -> callback(false, "User data not found", "")
+                            user.blocked -> {
+                                auth.signOut()
+                                callback(false, "Your account is blocked by admin", "")
+                            }
+                            else -> callback(true, "Login successful", user.role)
+                        }
                     }
                     .addOnFailureListener {
                         callback(false, it.message ?: "Failed to get user data", "")
@@ -51,7 +54,9 @@ class UserRepoImpl : UserRepo {
 
                 val user = model.copy(
                     userId = userId,
-                    email = email
+                    email = email,
+                    role = "user",
+                    blocked = false
                 )
 
                 userRef.child(userId).setValue(user)
@@ -95,25 +100,10 @@ class UserRepoImpl : UserRepo {
     ) {
         userRef.child(userId).get()
             .addOnSuccessListener { snapshot ->
-                val user = snapshot.getValue(UserModel::class.java)
-                callback(true, "User fetched", user)
+                callback(true, "User fetched", snapshot.getValue(UserModel::class.java))
             }
             .addOnFailureListener {
                 callback(false, it.message ?: "Failed to fetch user", null)
-            }
-    }
-
-    override fun updateProfile(
-        userId: String,
-        model: UserModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        userRef.child(userId).setValue(model)
-            .addOnSuccessListener {
-                callback(true, "Profile updated")
-            }
-            .addOnFailureListener {
-                callback(false, it.message ?: "Profile update failed")
             }
     }
 
@@ -126,9 +116,7 @@ class UserRepoImpl : UserRepo {
 
                 for (child in snapshot.children) {
                     val user = child.getValue(UserModel::class.java)
-                    if (user != null) {
-                        users.add(user)
-                    }
+                    if (user != null) users.add(user)
                 }
 
                 callback(true, "Users fetched", users)
@@ -148,7 +136,7 @@ class UserRepoImpl : UserRepo {
                 callback(true, if (blocked) "User blocked" else "User unblocked")
             }
             .addOnFailureListener {
-                callback(false, it.message ?: "Failed to update user status")
+                callback(false, it.message ?: "Failed to update user")
             }
     }
 
@@ -162,6 +150,19 @@ class UserRepoImpl : UserRepo {
             }
             .addOnFailureListener {
                 callback(false, it.message ?: "Failed to delete user")
+            }
+    }
+    override fun updateProfile(
+        userId: String,
+        model: UserModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        userRef.child(userId).setValue(model)
+            .addOnSuccessListener {
+                callback(true, "Profile updated successfully")
+            }
+            .addOnFailureListener {
+                callback(false, it.message ?: "Failed to update profile")
             }
     }
 }

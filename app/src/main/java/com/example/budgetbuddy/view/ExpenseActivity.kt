@@ -51,6 +51,8 @@ fun ExpenseBody() {
     var note by remember { mutableStateOf("") }
 
     var expenseList by remember { mutableStateOf<List<ExpenseModel>>(emptyList()) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteId by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -79,7 +81,7 @@ fun ExpenseBody() {
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(userId) {
         loadExpenses()
     }
 
@@ -240,6 +242,14 @@ fun ExpenseBody() {
 
                         Button(
                             onClick = {
+                                if (userId.isEmpty()) {
+                                    Toast.makeText(
+                                        context,
+                                        "User not logged in. Please login again.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    return@Button
+                                }
                                 if (title.isEmpty() || amount.isEmpty() || category.isEmpty()) {
                                     Toast.makeText(
                                         context,
@@ -365,22 +375,81 @@ fun ExpenseBody() {
                         darkText = darkText,
                         grayText = grayText,
                         onDelete = {
-                            expenseViewModel.deleteExpense(expense.expenseId) { success, message ->
-                                Toast.makeText(
-                                    context,
-                                    message,
-                                    Toast.LENGTH_LONG
-                                ).show()
-
-                                if (success) {
-                                    loadExpenses()
-                                }
-                            }
+                            deleteId = expense.expenseId
+                            showDeleteDialog = true
                         }
                     )
                 }
             }
         }
+    }
+    if (showDeleteDialog) {
+
+        AlertDialog(
+
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+
+            title = {
+                Text("Delete Expense")
+            },
+
+            text = {
+                Text("Are you sure you want to delete this expense?")
+            },
+
+            confirmButton = {
+
+                Button(
+                    onClick = {
+
+                        expenseViewModel.deleteExpense(deleteId) { success, message ->
+
+                            Toast.makeText(
+                                context,
+                                message,
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            if (success) {
+                                loadExpenses()
+                            }
+
+                        }
+
+                        showDeleteDialog = false
+
+                    },
+
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red
+                    )
+
+                ) {
+
+                    Text("Delete")
+
+                }
+
+            },
+
+            dismissButton = {
+
+                OutlinedButton(
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+                ) {
+
+                    Text("Cancel")
+
+                }
+
+            }
+
+        )
+
     }
 }
 

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.budgetbuddy.model.UserModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
+import android.content.Intent
 
 class RegistrationActivity : ComponentActivity() {
 
@@ -313,6 +314,8 @@ fun RegistrationBody() {
                         ).show()
 
                         if (success) {
+                            val intent = Intent(context, LoginActivity::class.java)
+                            context.startActivity(intent)
                             activity?.finish()
                         }
                     }
@@ -347,6 +350,8 @@ fun RegistrationBody() {
             Text(
                 text = "Login",
                 modifier = Modifier.clickable {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    context.startActivity(intent)
                     activity?.finish()
                 },
                 color = Color(0xFF4A6CF7),

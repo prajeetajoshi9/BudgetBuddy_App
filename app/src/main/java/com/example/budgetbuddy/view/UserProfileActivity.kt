@@ -1,30 +1,33 @@
 package com.example.budgetbuddy.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.UserModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class UserProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,13 +44,41 @@ class UserProfileActivity : ComponentActivity() {
 @Composable
 fun UserProfileBody() {
 
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val userViewModel: UserViewModel = viewModel()
+
+    var user by remember { mutableStateOf<UserModel?>(null) }
     var darkMode by remember { mutableStateOf(false) }
+
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf("") }
+    var editContact by remember { mutableStateOf("") }
+    var editAddress by remember { mutableStateOf("") }
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val userId = userViewModel.getCurrentUserId() ?: ""
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            userViewModel.getUserById(userId) { success, _, data ->
+                if (success && data != null) {
+                    user = data
+                    editName = data.name
+                    editContact = data.contact
+                    editAddress = data.address
+                }
+            }
+        }
+    }
 
     val primaryColor = Color(0xFF4A6CF7)
     val backgroundColor = Color(0xFFF8FAFF)
     val lightBlue = Color(0xFFEAF0FF)
     val darkText = Color(0xFF1E1E1E)
     val grayText = Color(0xFF7A7A7A)
+    val redColor = Color(0xFFE53935)
 
     Scaffold(
         containerColor = backgroundColor,
@@ -61,7 +92,7 @@ fun UserProfileBody() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { activity?.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
@@ -81,6 +112,7 @@ fun UserProfileBody() {
                 .fillMaxSize()
                 .background(backgroundColor)
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -103,41 +135,29 @@ fun UserProfileBody() {
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Pratik Joshi",
+                text = user?.name ?: "User",
                 color = darkText,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "User Account",
+                text = user?.role ?: "User Account",
                 color = grayText,
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            ProfileInfoCard(
-                title = "Email",
-                value = "pratik@example.com",
-                iconType = "email",
-                primaryColor = primaryColor,
-                lightBlue = lightBlue,
-                darkText = darkText,
-                grayText = grayText
-            )
+            ProfileInfoCard("Email", user?.email ?: "", "email", primaryColor, lightBlue, darkText, grayText)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            ProfileInfoCard(
-                title = "Contact",
-                value = "+977 9800000000",
-                iconType = "phone",
-                primaryColor = primaryColor,
-                lightBlue = lightBlue,
-                darkText = darkText,
-                grayText = grayText
-            )
+            ProfileInfoCard("Contact", user?.contact ?: "", "phone", primaryColor, lightBlue, darkText, grayText)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ProfileInfoCard("Address", user?.address ?: "", "address", primaryColor, lightBlue, darkText, grayText)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -171,8 +191,8 @@ fun UserProfileBody() {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Dark Mode",
-                            color = darkText,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = darkText
                         )
 
                         Text(
@@ -184,10 +204,7 @@ fun UserProfileBody() {
 
                     Switch(
                         checked = darkMode,
-                        onCheckedChange = { darkMode = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = primaryColor
-                        )
+                        onCheckedChange = { darkMode = it }
                     )
                 }
             }
@@ -195,7 +212,7 @@ fun UserProfileBody() {
             Spacer(modifier = Modifier.height(25.dp))
 
             Button(
-                onClick = { },
+                onClick = { showEditDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
@@ -216,39 +233,166 @@ fun UserProfileBody() {
                     text = "Edit Profile",
                     color = Color.White,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedButton(
-                onClick = { },
+                onClick = {
+                    showLogoutDialog = true
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
                 shape = RoundedCornerShape(15.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFFE53935)
+                    contentColor = redColor
                 )
             ) {
                 Icon(
                     imageVector = Icons.Default.Logout,
                     contentDescription = null,
-                    tint = Color(0xFFE53935)
+                    tint = redColor
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
                     text = "Logout",
-                    color = Color(0xFFE53935),
+                    color = redColor,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
             }
+
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = {
+                Text("Edit Profile")
+            },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = editContact,
+                        onValueChange = { editContact = it },
+                        label = { Text("Contact") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = editAddress,
+                        onValueChange = { editAddress = it },
+                        label = { Text("Address") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val currentUser = user
+
+                        if (currentUser != null) {
+                            val updatedUser = currentUser.copy(
+                                name = editName,
+                                contact = editContact,
+                                address = editAddress
+                            )
+
+                            userViewModel.updateProfile(
+                                userId = userId,
+                                model = updatedUser
+                            ) { success, message ->
+
+                                Toast.makeText(
+                                    context,
+                                    message,
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                if (success) {
+                                    user = updatedUser
+                                    showEditDialog = false
+                                }
+                            }
+                        }
+                    }
+                ) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEditDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showLogoutDialog = false
+            },
+            title = {
+                Text("Logout")
+            },
+            text = {
+                Text("Are you sure you want to logout?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+
+                        userViewModel.logout { _, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+                            val intent = Intent(context, LoginActivity::class.java)
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                            context.startActivity(intent)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE53935)
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -261,7 +405,12 @@ fun ProfileInfoCard(
     darkText: Color,
     grayText: Color
 ) {
-    val icon = if (iconType == "email") Icons.Default.Email else Icons.Default.Phone
+    val icon = when (iconType) {
+        "email" -> Icons.Default.Email
+        "phone" -> Icons.Default.Phone
+        "address" -> Icons.Default.LocationOn
+        else -> Icons.Default.Info
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -274,6 +423,7 @@ fun ProfileInfoCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Box(
                 modifier = Modifier
                     .size(42.dp)
@@ -298,7 +448,7 @@ fun ProfileInfoCard(
                 )
 
                 Text(
-                    text = value,
+                    text = if (value.isEmpty()) "Not added" else value,
                     color = darkText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp

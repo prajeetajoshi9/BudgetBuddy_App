@@ -1,5 +1,6 @@
 package com.example.budgetbuddy.view
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,21 +8,26 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
+import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class ReportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,15 +44,47 @@ class ReportActivity : ComponentActivity() {
 @Composable
 fun ReportBody() {
 
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val userViewModel: UserViewModel = viewModel()
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val expenseViewModel: ExpenseViewModel = viewModel()
+
+    val userId = userViewModel.getCurrentUserId() ?: ""
+
+    var totalBudget by remember { mutableStateOf(0.0) }
+    var totalExpense by remember { mutableStateOf(0.0) }
+    var categoryTotals by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+
     val primaryColor = Color(0xFF4A6CF7)
     val backgroundColor = Color(0xFFF8FAFF)
     val lightBlue = Color(0xFFEAF0FF)
     val darkText = Color(0xFF1E1E1E)
     val grayText = Color(0xFF7A7A7A)
 
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            budgetViewModel.getBudgetByUser(userId) { success, _, budgets ->
+                if (success) {
+                    totalBudget = budgets.sumOf { it.amount }
+                }
+            }
+
+            expenseViewModel.getExpenseByUser(userId) { success, _, expenses ->
+                if (success) {
+                    totalExpense = expenses.sumOf { it.amount }
+                    categoryTotals = expenses.groupBy { it.category }
+                        .mapValues { entry -> entry.value.sumOf { it.amount } }
+                }
+            }
+        }
+    }
+
+    val saving = totalBudget - totalExpense
+
     Scaffold(
         containerColor = backgroundColor,
-
         topBar = {
             TopAppBar(
                 title = {
@@ -57,7 +95,7 @@ fun ReportBody() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { activity?.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
@@ -85,13 +123,9 @@ fun ReportBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(25.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = primaryColor
-                    )
+                    colors = CardDefaults.cardColors(containerColor = primaryColor)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(22.dp)) {
                         Text(
                             text = "Monthly Report",
                             color = Color.White.copy(alpha = 0.8f),
@@ -101,7 +135,7 @@ fun ReportBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "June 2026",
+                            text = "Rs. $saving",
                             color = Color.White,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold
@@ -110,7 +144,7 @@ fun ReportBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "You saved Rs. 25,000 this month",
+                            text = if (saving >= 0) "Remaining from your budget" else "You crossed your budget",
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 14.sp
                         )
@@ -124,26 +158,26 @@ fun ReportBody() {
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     ReportSmallCard(
-                        title = "Income",
-                        amount = "Rs. 40k",
-                        color = Color(0xFFE8F7EF),
-                        textColor = Color(0xFF00A86B),
+                        title = "Budget",
+                        amount = "Rs. $totalBudget",
+                        color = lightBlue,
+                        textColor = primaryColor,
                         modifier = Modifier.weight(1f)
                     )
 
                     ReportSmallCard(
                         title = "Expense",
-                        amount = "Rs. 15k",
+                        amount = "Rs. $totalExpense",
                         color = Color(0xFFFFEEEE),
                         textColor = Color(0xFFE53935),
                         modifier = Modifier.weight(1f)
                     )
 
                     ReportSmallCard(
-                        title = "Saving",
-                        amount = "Rs. 25k",
-                        color = lightBlue,
-                        textColor = primaryColor,
+                        title = "Left",
+                        amount = "Rs. $saving",
+                        color = Color(0xFFE8F7EF),
+                        textColor = Color(0xFF00A86B),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -164,9 +198,7 @@ fun ReportBody() {
                         .fillMaxWidth()
                         .height(230.dp),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(
                         modifier = Modifier
@@ -193,13 +225,13 @@ fun ReportBody() {
                         Spacer(modifier = Modifier.height(14.dp))
 
                         Text(
-                            text = "Chart will be shown here",
+                            text = "Chart Placeholder",
                             color = darkText,
                             fontWeight = FontWeight.Bold
                         )
 
                         Text(
-                            text = "Pie chart / Bar chart will be added later",
+                            text = "Pie chart / Bar chart will be connected later",
                             color = grayText,
                             fontSize = 13.sp
                         )
@@ -209,7 +241,7 @@ fun ReportBody() {
 
             item {
                 Text(
-                    text = "Month Comparison",
+                    text = "Budget Summary",
                     color = darkText,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
@@ -220,16 +252,12 @@ fun ReportBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         ComparisonRow(
-                            title = "This Month",
-                            amount = "Rs. 15,000",
+                            title = "Total Budget",
+                            amount = "Rs. $totalBudget",
                             color = primaryColor
                         )
 
@@ -239,16 +267,19 @@ fun ReportBody() {
                         )
 
                         ComparisonRow(
-                            title = "Last Month",
-                            amount = "Rs. 18,500",
+                            title = "Total Expense",
+                            amount = "Rs. $totalExpense",
                             color = Color(0xFFE53935)
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            text = "You spent Rs. 3,500 less than last month",
-                            color = Color(0xFF00A86B),
+                            text = if (saving >= 0)
+                                "You still have Rs. $saving remaining."
+                            else
+                                "You crossed your budget by Rs. ${-saving}.",
+                            color = if (saving >= 0) Color(0xFF00A86B) else Color(0xFFE53935),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
                         )
@@ -265,34 +296,29 @@ fun ReportBody() {
                 )
             }
 
-            item {
-                CategoryReportCard(
-                    title = "Food",
-                    amount = "Rs. 4,500",
-                    percent = "30%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
-            }
+            if (categoryTotals.isEmpty()) {
+                item {
+                    Text(
+                        text = "No expense data available.",
+                        color = grayText,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                items(categoryTotals.toList()) { item ->
+                    val percent =
+                        if (totalExpense > 0) ((item.second / totalExpense) * 100).toInt()
+                        else 0
 
-            item {
-                CategoryReportCard(
-                    title = "Travel",
-                    amount = "Rs. 2,000",
-                    percent = "13%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
-            }
-
-            item {
-                CategoryReportCard(
-                    title = "Shopping",
-                    amount = "Rs. 6,000",
-                    percent = "40%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
+                    CategoryReportCard(
+                        title = item.first,
+                        amount = "Rs. ${item.second}",
+                        percent = "$percent%",
+                        progress = percent / 100f,
+                        primaryColor = primaryColor,
+                        lightBlue = lightBlue
+                    )
+                }
             }
 
             item {
@@ -302,12 +328,10 @@ fun ReportBody() {
                         .fillMaxWidth()
                         .height(55.dp),
                     shape = RoundedCornerShape(15.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryColor
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Download,
+                        imageVector = Icons.Default.List,
                         contentDescription = null,
                         tint = Color.White
                     )
@@ -337,9 +361,7 @@ fun ReportSmallCard(
     Card(
         modifier = modifier.height(85.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Column(
             modifier = Modifier
@@ -359,7 +381,7 @@ fun ReportSmallCard(
             Text(
                 text = amount,
                 color = textColor,
-                fontSize = 17.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -395,19 +417,16 @@ fun CategoryReportCard(
     title: String,
     amount: String,
     percent: String,
+    progress: Float,
     primaryColor: Color,
     lightBlue: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -437,7 +456,7 @@ fun CategoryReportCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             LinearProgressIndicator(
-                progress = 0.4f,
+                progress = progress.coerceIn(0f, 1f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(7.dp),

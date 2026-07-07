@@ -47,6 +47,8 @@ fun BudgetBody() {
     var budgetAmount by remember { mutableStateOf("") }
     var budgetMonth by remember { mutableStateOf("") }
     var budgetList by remember { mutableStateOf<List<BudgetModel>>(emptyList()) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedBudgetId by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -55,6 +57,7 @@ fun BudgetBody() {
     val userViewModel: UserViewModel = viewModel()
 
     val userId = userViewModel.getCurrentUserId() ?: ""
+
 
     val primaryColor = Color(0xFF4A6CF7)
     val backgroundColor = Color(0xFFF8FAFF)
@@ -72,7 +75,7 @@ fun BudgetBody() {
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(userId) {
         loadBudgets()
     }
 
@@ -214,6 +217,14 @@ fun BudgetBody() {
 
                         Button(
                             onClick = {
+                                if (userId.isEmpty()) {
+                                    Toast.makeText(
+                                        context,
+                                        "User not logged in. Please login again.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    return@Button
+                                }
                                 if (budgetTitle.isEmpty() || budgetAmount.isEmpty() || budgetMonth.isEmpty()) {
                                     Toast.makeText(
                                         context,
@@ -238,6 +249,7 @@ fun BudgetBody() {
                                         )
 
                                         budgetViewModel.addBudget(budgetModel) { success, message ->
+
                                             Toast.makeText(
                                                 context,
                                                 message,
@@ -305,22 +317,75 @@ fun BudgetBody() {
                         amount = "Rs. ${budget.amount}",
                         used = budget.month,
                         onDelete = {
-                            budgetViewModel.deleteBudget(budget.budgetId) { success, message ->
-                                Toast.makeText(
-                                    context,
-                                    message,
-                                    Toast.LENGTH_LONG
-                                ).show()
-
-                                if (success) {
-                                    loadBudgets()
-                                }
-                            }
+                            selectedBudgetId = budget.budgetId
+                            showDeleteDialog = true
                         }
                     )
                 }
             }
         }
+    }
+    if (showDeleteDialog) {
+
+        AlertDialog(
+
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+
+            title = {
+                Text("Delete Budget")
+            },
+
+            text = {
+                Text("Are you sure you want to delete this budget?")
+            },
+
+            confirmButton = {
+
+                Button(
+
+                    onClick = {
+
+                        budgetViewModel.deleteBudget(
+                            selectedBudgetId
+                        ) { success, message ->
+
+                            Toast.makeText(
+                                context,
+                                message,
+                                Toast.LENGTH_LONG
+                            ).show()
+
+                            if (success) {
+                                loadBudgets()
+                            }
+
+                        }
+
+                        showDeleteDialog = false
+                    }
+
+                ) {
+                    Text("Delete")
+                }
+
+            },
+
+            dismissButton = {
+
+                TextButton(
+
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+
+                ) {
+                    Text("Cancel")
+                }
+
+            }
+        )
     }
 }
 

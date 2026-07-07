@@ -31,12 +31,6 @@ interface UserRepo {
         callback: (Boolean, String, UserModel?) -> Unit
     )
 
-    fun updateProfile(
-        userId: String,
-        model: UserModel,
-        callback: (Boolean, String) -> Unit
-    )
-
     fun getAllUsers(
         callback: (Boolean, String, List<UserModel>) -> Unit
     )
@@ -49,6 +43,12 @@ interface UserRepo {
 
     fun deleteUser(
         userId: String,
+        callback: (Boolean, String) -> Unit
+    )
+
+    fun updateProfile(
+        userId: String,
+        model: UserModel,
         callback: (Boolean, String) -> Unit
     )
 }

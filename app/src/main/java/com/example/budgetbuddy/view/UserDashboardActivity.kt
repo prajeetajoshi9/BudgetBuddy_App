@@ -23,10 +23,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.ExpenseModel
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
+import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class UserDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,19 +50,79 @@ class UserDashboardActivity : ComponentActivity() {
 @Composable
 fun UserDashboardBody() {
 
-    val totalIncome = 40000
-    val totalSpent = 15000
-    val totalSaving = totalIncome - totalSpent
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val monthlyBudget = 20000
-    val budgetUsed = totalSpent
-    val budgetLeft = monthlyBudget - budgetUsed
-    val budgetProgress = budgetUsed.toFloat() / monthlyBudget.toFloat()
+    val userViewModel: UserViewModel = viewModel()
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val expenseViewModel: ExpenseViewModel = viewModel()
+
+    val userId = userViewModel.getCurrentUserId() ?: ""
+
+    var userName by remember { mutableStateOf("User") }
+    var totalBudget by remember { mutableStateOf(0.0) }
+    var totalSpent by remember { mutableStateOf(0.0) }
+    var recentExpenses by remember { mutableStateOf<List<ExpenseModel>>(emptyList()) }
+
+    fun loadDashboardData() {
+        if (userId.isNotEmpty()) {
+
+            userViewModel.getUserById(userId) { success, _, user ->
+                if (success && user != null) {
+                    userName = user.name
+                }
+            }
+
+            budgetViewModel.getBudgetByUser(userId) { success, _, budgets ->
+                if (success) {
+                    totalBudget = budgets.sumOf { it.amount }
+                }
+            }
+
+            expenseViewModel.getExpenseByUser(userId) { success, _, expenses ->
+                if (success) {
+                    totalSpent = expenses.sumOf { it.amount }
+                    recentExpenses = expenses.takeLast(3).reversed()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            loadDashboardData()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                loadDashboardData()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val budgetLeft = totalBudget - totalSpent
+
+    val budgetProgress =
+        if (totalBudget > 0) {
+            (totalSpent / totalBudget).toFloat().coerceIn(0f, 1f)
+        } else {
+            0f
+        }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { },
+                onClick = {
+                    context.startActivity(Intent(context, ExpenseActivity::class.java))
+                },
                 containerColor = Color(0xFF4A6CF7)
             ) {
                 Icon(
@@ -69,37 +137,35 @@ fun UserDashboardBody() {
             NavigationBar(containerColor = Color.White) {
                 NavigationBarItem(
                     selected = true,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.Home, contentDescription = null)
-                    },
+                    onClick = {},
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Home") }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.List, contentDescription = null)
+                    onClick = {
+                        context.startActivity(Intent(context, ReportActivity::class.java))
                     },
+                    icon = { Icon(Icons.Default.List, contentDescription = null) },
                     label = { Text("Report") }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.Add, contentDescription = null)
+                    onClick = {
+                        context.startActivity(Intent(context, ExpenseActivity::class.java))
                     },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     label = { Text("Add") }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.AccountCircle, contentDescription = null)
+                    onClick = {
+                        context.startActivity(Intent(context, UserProfileActivity::class.java))
                     },
+                    icon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
                     label = { Text("Profile") }
                 )
             }
@@ -122,7 +188,7 @@ fun UserDashboardBody() {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Hello User",
+                            text = "Hello $userName",
                             color = Color(0xFF1E1E1E),
                             fontSize = 23.sp,
                             fontWeight = FontWeight.Bold
@@ -139,7 +205,12 @@ fun UserDashboardBody() {
                         modifier = Modifier
                             .size(45.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEAF0FF)),
+                            .background(Color(0xFFEAF0FF))
+                            .clickable {
+                                context.startActivity(
+                                    Intent(context, NotificationActivity::class.java)
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -167,7 +238,7 @@ fun UserDashboardBody() {
                             .padding(20.dp)
                     ) {
                         Text(
-                            text = "Total Balance",
+                            text = "Remaining Balance",
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 15.sp
                         )
@@ -175,7 +246,7 @@ fun UserDashboardBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. $totalSaving",
+                            text = "Rs. $budgetLeft",
                             color = Color.White,
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold
@@ -185,8 +256,8 @@ fun UserDashboardBody() {
 
                         Row(modifier = Modifier.fillMaxWidth()) {
                             BalanceInfo(
-                                title = "Income",
-                                amount = "Rs. $totalIncome",
+                                title = "Budget",
+                                amount = "Rs. $totalBudget",
                                 modifier = Modifier.weight(1f)
                             )
 
@@ -197,8 +268,8 @@ fun UserDashboardBody() {
                             )
 
                             BalanceInfo(
-                                title = "Saving",
-                                amount = "Rs. $totalSaving",
+                                title = "Left",
+                                amount = "Rs. $budgetLeft",
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -235,16 +306,35 @@ fun UserDashboardBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. $budgetUsed used out of Rs. $monthlyBudget",
+                            text = "Rs. $totalSpent used out of Rs. $totalBudget",
                             color = Color(0xFF7A7A7A),
                             fontSize = 13.sp
                         )
 
                         Text(
                             text = "Rs. $budgetLeft left",
-                            color = Color(0xFF00A86B),
+                            color = if (budgetLeft < 0) Color(0xFFE53935) else Color(0xFF00A86B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            if (budgetLeft < 0) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFEEEE)
+                        )
+                    ) {
+                        Text(
+                            text = "Budget crossed! You spent more than your budget.",
+                            modifier = Modifier.padding(16.dp),
+                            color = Color(0xFFE53935),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -266,7 +356,9 @@ fun UserDashboardBody() {
                         color = Color(0xFFEAF0FF),
                         textColor = Color(0xFF4A6CF7),
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(Intent(context, BudgetActivity::class.java))
+                    }
 
                     Spacer(modifier = Modifier.width(10.dp))
 
@@ -275,7 +367,9 @@ fun UserDashboardBody() {
                         color = Color(0xFFFFEEEE),
                         textColor = Color(0xFFE53935),
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(Intent(context, ExpenseActivity::class.java))
+                    }
 
                     Spacer(modifier = Modifier.width(10.dp))
 
@@ -284,36 +378,9 @@ fun UserDashboardBody() {
                         color = Color(0xFFE8F7EF),
                         textColor = Color(0xFF00A86B),
                         modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            item {
-                Text(
-                    text = "Expense Categories",
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E1E1E)
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    CategoryCard(
-                        title = "Food",
-                        amount = "Rs. 4,500",
-                        color = Color(0xFFFFF4D9),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    CategoryCard(
-                        title = "Travel",
-                        amount = "Rs. 2,000",
-                        color = Color(0xFFEAF0FF),
-                        modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(Intent(context, ReportActivity::class.java))
+                    }
                 }
             }
 
@@ -333,27 +400,25 @@ fun UserDashboardBody() {
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 15.dp)) {
-                        TransactionItem(
-                            title = "Shopping",
-                            category = "Lifestyle",
-                            amount = "- Rs. 2500"
-                        )
+                        if (recentExpenses.isEmpty()) {
+                            Text(
+                                text = "No recent transactions",
+                                modifier = Modifier.padding(vertical = 14.dp),
+                                color = Color(0xFF7A7A7A)
+                            )
+                        } else {
+                            recentExpenses.forEachIndexed { index, expense ->
+                                TransactionItem(
+                                    title = expense.title,
+                                    category = expense.category,
+                                    amount = "- Rs. ${expense.amount}"
+                                )
 
-                        HorizontalDivider(color = Color(0xFFEAEAEA))
-
-                        TransactionItem(
-                            title = "Food",
-                            category = "Restaurant",
-                            amount = "- Rs. 500"
-                        )
-
-                        HorizontalDivider(color = Color(0xFFEAEAEA))
-
-                        TransactionItem(
-                            title = "Salary",
-                            category = "Income",
-                            amount = "+ Rs. 40,000"
-                        )
+                                if (index != recentExpenses.lastIndex) {
+                                    HorizontalDivider(color = Color(0xFFEAEAEA))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -390,12 +455,13 @@ fun ActionCard(
     title: String,
     color: Color,
     textColor: Color,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = modifier
             .height(70.dp)
-            .clickable { },
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = color)
     ) {
@@ -408,42 +474,6 @@ fun ActionCard(
                 color = textColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun CategoryCard(
-    title: String,
-    amount: String,
-    color: Color,
-    modifier: Modifier
-) {
-    Card(
-        modifier = modifier.height(70.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = color)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                color = Color(0xFF1E1E1E),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Text(
-                text = amount,
-                color = Color(0xFF7A7A7A),
-                fontSize = 13.sp
             )
         }
     }
@@ -478,19 +508,9 @@ fun TransactionItem(
 
         Text(
             text = amount,
-            color =
-                if (amount.startsWith("+"))
-                    Color(0xFF00A86B)
-                else
-                    Color(0xFFE53935),
+            color = Color(0xFFE53935),
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun UserDashboardPreview() {
-    UserDashboardBody()
 }

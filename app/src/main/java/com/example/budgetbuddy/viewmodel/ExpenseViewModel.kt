@@ -16,21 +16,6 @@ class ExpenseViewModel : ViewModel() {
         repo.addExpense(model, callback)
     }
 
-    fun updateExpense(
-        expenseId: String,
-        model: ExpenseModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.updateExpense(expenseId, model, callback)
-    }
-
-    fun deleteExpense(
-        expenseId: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.deleteExpense(expenseId, callback)
-    }
-
     fun getExpenseByUser(
         userId: String,
         callback: (Boolean, String, List<ExpenseModel>) -> Unit
@@ -38,10 +23,10 @@ class ExpenseViewModel : ViewModel() {
         repo.getExpenseByUser(userId, callback)
     }
 
-    fun getExpenseById(
+    fun deleteExpense(
         expenseId: String,
-        callback: (Boolean, String, ExpenseModel?) -> Unit
+        callback: (Boolean, String) -> Unit
     ) {
-        repo.getExpenseById(expenseId, callback)
+        repo.deleteExpense(expenseId, callback)
     }
 }

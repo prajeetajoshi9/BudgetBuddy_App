@@ -16,21 +16,6 @@ class BudgetViewModel : ViewModel() {
         repo.addBudget(model, callback)
     }
 
-    fun updateBudget(
-        budgetId: String,
-        model: BudgetModel,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.updateBudget(budgetId, model, callback)
-    }
-
-    fun deleteBudget(
-        budgetId: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        repo.deleteBudget(budgetId, callback)
-    }
-
     fun getBudgetByUser(
         userId: String,
         callback: (Boolean, String, List<BudgetModel>) -> Unit
@@ -38,10 +23,10 @@ class BudgetViewModel : ViewModel() {
         repo.getBudgetByUser(userId, callback)
     }
 
-    fun getBudgetById(
+    fun deleteBudget(
         budgetId: String,
-        callback: (Boolean, String, BudgetModel?) -> Unit
+        callback: (Boolean, String) -> Unit
     ) {
-        repo.getBudgetById(budgetId, callback)
+        repo.deleteBudget(budgetId, callback)
     }
 }
