@@ -1,6 +1,8 @@
 package com.example.budgetbuddy.view
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,14 +17,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.ExpenseModel
+import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class ExpenseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +50,16 @@ fun ExpenseBody() {
     var category by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
 
+    var expenseList by remember { mutableStateOf<List<ExpenseModel>>(emptyList()) }
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val expenseViewModel: ExpenseViewModel = viewModel()
+    val userViewModel: UserViewModel = viewModel()
+
+    val userId = userViewModel.getCurrentUserId() ?: ""
+
     val primaryColor = Color(0xFF4A6CF7)
     val backgroundColor = Color(0xFFF8FAFF)
     val lightBlue = Color(0xFFEAF0FF)
@@ -53,16 +69,28 @@ fun ExpenseBody() {
     val categories = listOf("All", "Food", "Travel", "Shopping", "Bills")
     var selectedCategory by remember { mutableStateOf("All") }
 
-    val expenses = listOf(
-        Triple("Food", "Restaurant", "Rs. 500"),
-        Triple("Travel", "Bus Fare", "Rs. 200"),
-        Triple("Shopping", "Clothes", "Rs. 2500"),
-        Triple("Bills", "Internet", "Rs. 1200")
-    )
+    fun loadExpenses() {
+        if (userId.isNotEmpty()) {
+            expenseViewModel.getExpenseByUser(userId) { success, _, expenses ->
+                if (success) {
+                    expenseList = expenses
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadExpenses()
+    }
+
+    val filteredExpenses =
+        if (selectedCategory == "All") expenseList
+        else expenseList.filter { it.category == selectedCategory }
+
+    val totalExpense = expenseList.sumOf { it.amount }
 
     Scaffold(
         containerColor = backgroundColor,
-
         topBar = {
             TopAppBar(
                 title = {
@@ -73,7 +101,7 @@ fun ExpenseBody() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { activity?.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
@@ -101,15 +129,11 @@ fun ExpenseBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(25.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = primaryColor
-                    )
+                    colors = CardDefaults.cardColors(containerColor = primaryColor)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(22.dp)) {
                         Text(
-                            text = "Today's Expense",
+                            text = "Total Expense",
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 15.sp
                         )
@@ -117,7 +141,7 @@ fun ExpenseBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. 1,250",
+                            text = "Rs. $totalExpense",
                             color = Color.White,
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold
@@ -126,7 +150,7 @@ fun ExpenseBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "3 transactions today",
+                            text = "${expenseList.size} expenses added",
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 14.sp
                         )
@@ -147,13 +171,9 @@ fun ExpenseBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
@@ -190,7 +210,7 @@ fun ExpenseBody() {
                             value = category,
                             onValueChange = { category = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Category") },
+                            placeholder = { Text("Category: Food / Travel / Shopping / Bills") },
                             shape = RoundedCornerShape(15.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = lightBlue,
@@ -219,7 +239,50 @@ fun ExpenseBody() {
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Button(
-                            onClick = { },
+                            onClick = {
+                                if (title.isEmpty() || amount.isEmpty() || category.isEmpty()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Please fill title, amount and category",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    val amountDouble = amount.toDoubleOrNull()
+
+                                    if (amountDouble == null) {
+                                        Toast.makeText(
+                                            context,
+                                            "Enter valid amount",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        val expenseModel = ExpenseModel(
+                                            userId = userId,
+                                            title = title,
+                                            amount = amountDouble,
+                                            category = category,
+                                            note = note,
+                                            date = "Today"
+                                        )
+
+                                        expenseViewModel.addExpense(expenseModel) { success, message ->
+                                            Toast.makeText(
+                                                context,
+                                                message,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+
+                                            if (success) {
+                                                title = ""
+                                                amount = ""
+                                                category = ""
+                                                note = ""
+                                                loadExpenses()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(55.dp),
@@ -282,16 +345,40 @@ fun ExpenseBody() {
                 )
             }
 
-            items(expenses) { expense ->
-                ExpenseCard(
-                    category = expense.first,
-                    title = expense.second,
-                    amount = expense.third,
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue,
-                    darkText = darkText,
-                    grayText = grayText
-                )
+            if (filteredExpenses.isEmpty()) {
+                item {
+                    Text(
+                        text = "No expenses found.",
+                        color = grayText,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                items(filteredExpenses) { expense ->
+                    ExpenseCard(
+                        category = expense.category,
+                        title = expense.title,
+                        amount = "Rs. ${expense.amount}",
+                        date = expense.date,
+                        note = expense.note,
+                        primaryColor = primaryColor,
+                        darkText = darkText,
+                        grayText = grayText,
+                        onDelete = {
+                            expenseViewModel.deleteExpense(expense.expenseId) { success, message ->
+                                Toast.makeText(
+                                    context,
+                                    message,
+                                    Toast.LENGTH_LONG
+                                ).show()
+
+                                if (success) {
+                                    loadExpenses()
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -309,8 +396,7 @@ fun CategoryChip(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(50.dp),
         colors = CardDefaults.cardColors(
-            containerColor =
-                if (selected) primaryColor else lightBlue
+            containerColor = if (selected) primaryColor else lightBlue
         )
     ) {
         Text(
@@ -327,27 +413,21 @@ fun ExpenseCard(
     category: String,
     title: String,
     amount: String,
+    date: String,
+    note: String,
     primaryColor: Color,
-    lightBlue: Color,
     darkText: Color,
-    grayText: Color
+    grayText: Color,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = category,
                         color = primaryColor,
@@ -365,10 +445,18 @@ fun ExpenseCard(
                     )
 
                     Text(
-                        text = "Today",
+                        text = date,
                         color = grayText,
                         fontSize = 13.sp
                     )
+
+                    if (note.isNotEmpty()) {
+                        Text(
+                            text = note,
+                            color = grayText,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
 
                 Text(
@@ -385,24 +473,19 @@ fun ExpenseCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = null,
-                        tint = primaryColor
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Edit", color = primaryColor)
-                }
-
-                TextButton(onClick = { }) {
+                TextButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
                         tint = Color(0xFFE53935)
                     )
+
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete", color = Color(0xFFE53935))
+
+                    Text(
+                        text = "Delete",
+                        color = Color(0xFFE53935)
+                    )
                 }
             }
         }

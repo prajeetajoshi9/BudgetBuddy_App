@@ -1,23 +1,32 @@
 package com.example.budgetbuddy.view
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.BudgetModel
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class BudgetActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +46,15 @@ fun BudgetBody() {
     var budgetTitle by remember { mutableStateOf("") }
     var budgetAmount by remember { mutableStateOf("") }
     var budgetMonth by remember { mutableStateOf("") }
+    var budgetList by remember { mutableStateOf<List<BudgetModel>>(emptyList()) }
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val userViewModel: UserViewModel = viewModel()
+
+    val userId = userViewModel.getCurrentUserId() ?: ""
 
     val primaryColor = Color(0xFF4A6CF7)
     val backgroundColor = Color(0xFFF8FAFF)
@@ -44,9 +62,24 @@ fun BudgetBody() {
     val darkText = Color(0xFF1E1E1E)
     val grayText = Color(0xFF7A7A7A)
 
+    fun loadBudgets() {
+        if (userId.isNotEmpty()) {
+            budgetViewModel.getBudgetByUser(userId) { success, _, budgets ->
+                if (success) {
+                    budgetList = budgets
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadBudgets()
+    }
+
+    val totalBudget = budgetList.sumOf { it.amount }
+
     Scaffold(
         containerColor = backgroundColor,
-
         topBar = {
             TopAppBar(
                 title = {
@@ -57,7 +90,7 @@ fun BudgetBody() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { activity?.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
@@ -85,15 +118,11 @@ fun BudgetBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(25.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = primaryColor
-                    )
+                    colors = CardDefaults.cardColors(containerColor = primaryColor)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(22.dp)) {
                         Text(
-                            text = "Monthly Budget",
+                            text = "Total Budget",
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 15.sp
                         )
@@ -101,7 +130,7 @@ fun BudgetBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. 20,000",
+                            text = "Rs. $totalBudget",
                             color = Color.White,
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold
@@ -110,49 +139,9 @@ fun BudgetBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. 5,000 remaining",
+                            text = "${budgetList.size} budget records added",
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp)
-                    ) {
-                        Text(
-                            text = "Budget Progress",
-                            color = darkText,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        LinearProgressIndicator(
-                            progress = 0.75f,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp),
-                            color = primaryColor,
-                            trackColor = lightBlue
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Rs. 15,000 used out of Rs. 20,000",
-                            color = grayText,
-                            fontSize = 13.sp
                         )
                     }
                 }
@@ -171,13 +160,10 @@ fun BudgetBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+
                         OutlinedTextField(
                             value = budgetTitle,
                             onValueChange = { budgetTitle = it },
@@ -214,7 +200,7 @@ fun BudgetBody() {
                             value = budgetMonth,
                             onValueChange = { budgetMonth = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Month") },
+                            placeholder = { Text("Month Example: July 2026") },
                             shape = RoundedCornerShape(15.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = lightBlue,
@@ -227,7 +213,47 @@ fun BudgetBody() {
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Button(
-                            onClick = { },
+                            onClick = {
+                                if (budgetTitle.isEmpty() || budgetAmount.isEmpty() || budgetMonth.isEmpty()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Please fill all fields",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    val amountDouble = budgetAmount.toDoubleOrNull()
+
+                                    if (amountDouble == null) {
+                                        Toast.makeText(
+                                            context,
+                                            "Enter valid amount",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        val budgetModel = BudgetModel(
+                                            userId = userId,
+                                            title = budgetTitle,
+                                            amount = amountDouble,
+                                            month = budgetMonth
+                                        )
+
+                                        budgetViewModel.addBudget(budgetModel) { success, message ->
+                                            Toast.makeText(
+                                                context,
+                                                message,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+
+                                            if (success) {
+                                                budgetTitle = ""
+                                                budgetAmount = ""
+                                                budgetMonth = ""
+                                                loadBudgets()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(55.dp),
@@ -237,7 +263,7 @@ fun BudgetBody() {
                             )
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Save,
+                                imageVector = Icons.Default.Add,
                                 contentDescription = null,
                                 tint = Color.White
                             )
@@ -257,117 +283,43 @@ fun BudgetBody() {
 
             item {
                 Text(
-                    text = "Category Budgets",
+                    text = "Your Budgets",
                     color = darkText,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    BudgetCategoryCard(
-                        title = "Food",
-                        amount = "Rs. 5,000",
-                        color = Color(0xFFFFF4D9),
-                        modifier = Modifier.weight(1f)
+            if (budgetList.isEmpty()) {
+                item {
+                    Text(
+                        text = "No budget added yet.",
+                        color = grayText,
+                        fontSize = 14.sp
                     )
+                }
+            } else {
+                items(budgetList) { budget ->
+                    BudgetHistoryCard(
+                        title = budget.title,
+                        amount = "Rs. ${budget.amount}",
+                        used = budget.month,
+                        onDelete = {
+                            budgetViewModel.deleteBudget(budget.budgetId) { success, message ->
+                                Toast.makeText(
+                                    context,
+                                    message,
+                                    Toast.LENGTH_LONG
+                                ).show()
 
-                    BudgetCategoryCard(
-                        title = "Travel",
-                        amount = "Rs. 3,000",
-                        color = lightBlue,
-                        modifier = Modifier.weight(1f)
+                                if (success) {
+                                    loadBudgets()
+                                }
+                            }
+                        }
                     )
                 }
             }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    BudgetCategoryCard(
-                        title = "Shopping",
-                        amount = "Rs. 4,000",
-                        color = Color(0xFFFFEEEE),
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    BudgetCategoryCard(
-                        title = "Bills",
-                        amount = "Rs. 8,000",
-                        color = Color(0xFFE8F7EF),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            item {
-                Text(
-                    text = "Budget History",
-                    color = darkText,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            item {
-                BudgetHistoryCard(
-                    title = "June Budget",
-                    amount = "Rs. 20,000",
-                    used = "Rs. 15,000 used"
-                )
-            }
-
-            item {
-                BudgetHistoryCard(
-                    title = "May Budget",
-                    amount = "Rs. 18,000",
-                    used = "Rs. 17,000 used"
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun BudgetCategoryCard(
-    title: String,
-    amount: String,
-    color: Color,
-    modifier: Modifier
-) {
-    Card(
-        modifier = modifier.height(80.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = title,
-                color = Color(0xFF1E1E1E),
-                fontWeight = FontWeight.Bold,
-                fontSize = 15.sp
-            )
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Text(
-                text = amount,
-                color = Color(0xFF7A7A7A),
-                fontSize = 13.sp
-            )
         }
     }
 }
@@ -376,14 +328,13 @@ fun BudgetCategoryCard(
 fun BudgetHistoryCard(
     title: String,
     amount: String,
-    used: String
+    used: String,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -406,11 +357,23 @@ fun BudgetHistoryCard(
                 )
             }
 
-            Text(
-                text = amount,
-                color = Color(0xFF4A6CF7),
-                fontWeight = FontWeight.Bold
-            )
+            Row {
+                Text(
+                    text = amount,
+                    color = Color(0xFF4A6CF7),
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = Color(0xFFE53935)
+                    )
+                }
+            }
         }
     }
 }
