@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -28,14 +27,48 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.UserModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
+import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.NotificationViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 
 class AdminDashboardActivity : ComponentActivity() {
+
+    private var lastDarkMode: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+        lastDarkMode = themeManager.isDarkMode()
+
         setContent {
-            AdminDashboardBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                AdminDashboardBody()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val themeManager = ThemeManager(this)
+        val currentDarkMode = themeManager.isDarkMode()
+
+        if (currentDarkMode != lastDarkMode) {
+            recreate()
         }
     }
 }
@@ -44,24 +77,88 @@ class AdminDashboardActivity : ComponentActivity() {
 fun AdminDashboardBody() {
 
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val primaryColor = Color(0xFF4A6CF7)
-    val backgroundColor = Color(0xFFF8FAFF)
-    val lightBlue = Color(0xFFEAF0FF)
-    val darkText = Color(0xFF1E1E1E)
-    val grayText = Color(0xFF7A7A7A)
+    val userViewModel: UserViewModel = viewModel()
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val expenseViewModel: ExpenseViewModel = viewModel()
+    val notificationViewModel: NotificationViewModel = viewModel()
+
+    var totalUsers by remember { mutableStateOf(0) }
+    var blockedUsers by remember { mutableStateOf(0) }
+    var totalBudgets by remember { mutableStateOf(0) }
+    var totalExpenses by remember { mutableStateOf(0) }
+    var totalExpenseAmount by remember { mutableStateOf(0.0) }
+    var totalBudgetAmount by remember { mutableStateOf(0.0) }
+    var recentUsers by remember { mutableStateOf<List<UserModel>>(emptyList()) }
+    var unreadNotifications by remember { mutableStateOf(0) }
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val lightBlue = MaterialTheme.colorScheme.surface
+    val darkText = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+    val errorColor = MaterialTheme.colorScheme.error
+    val successColor = Color(0xFF00A86B)
+
+    fun loadAdminData() {
+        userViewModel.getAllUsers { success, _, users ->
+            if (success) {
+                totalUsers = users.size
+                blockedUsers = users.count { it.blocked }
+                recentUsers = users.takeLast(3).reversed()
+            }
+        }
+
+        budgetViewModel.getAllBudgets { success, _, budgets ->
+            if (success) {
+                totalBudgets = budgets.size
+                totalBudgetAmount = budgets.sumOf { it.amount }
+            }
+        }
+
+        expenseViewModel.getAllExpenses { success, _, expenses ->
+            if (success) {
+                totalExpenses = expenses.size
+                totalExpenseAmount = expenses.sumOf { it.amount }
+            }
+        }
+
+        notificationViewModel.getNotificationByUser("admin") { success, _, list ->
+            if (success) {
+                unreadNotifications = list.count { !it.read }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadAdminData()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                loadAdminData()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Scaffold(
         containerColor = backgroundColor,
-
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(containerColor = surfaceColor) {
+
                 NavigationBarItem(
                     selected = true,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.Home, contentDescription = null)
-                    },
+                    onClick = {},
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Home") }
                 )
 
@@ -72,9 +169,7 @@ fun AdminDashboardBody() {
                             Intent(context, AdminManageUsersActivity::class.java)
                         )
                     },
-                    icon = {
-                        Icon(Icons.Default.Group, contentDescription = null)
-                    },
+                    icon = { Icon(Icons.Default.Group, contentDescription = null) },
                     label = { Text("Users") }
                 )
 
@@ -85,19 +180,19 @@ fun AdminDashboardBody() {
                             Intent(context, AdminReportActivity::class.java)
                         )
                     },
-                    icon = {
-                        Icon(Icons.Default.List, contentDescription = null)
-                    },
+                    icon = { Icon(Icons.Default.List, contentDescription = null) },
                     label = { Text("Reports") }
                 )
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = { },
-                    icon = {
-                        Icon(Icons.Default.AccountCircle, contentDescription = null)
+                    onClick = {
+                        context.startActivity(
+                            Intent(context, UserProfileActivity::class.java)
+                        )
                     },
-                    label = { Text("Admin") }
+                    icon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+                    label = { Text("Profile") }
                 )
             }
         }
@@ -117,6 +212,7 @@ fun AdminDashboardBody() {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Admin Dashboard",
@@ -136,50 +232,55 @@ fun AdminDashboardBody() {
                         modifier = Modifier
                             .size(45.dp)
                             .clip(CircleShape)
-                            .background(lightBlue),
+                            .background(surfaceColor)
+                            .clickable {
+                                context.startActivity(
+                                    Intent(context, NotificationActivity::class.java)
+                                        .putExtra("target", "admin")
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = null,
-                            tint = primaryColor
-                        )
+                        BadgedBox(
+                            badge = {
+                                if (unreadNotifications > 0) {
+                                    Badge {
+                                        Text(unreadNotifications.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = primaryColor
+                            )
+                        }
                     }
                 }
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(25.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = primaryColor
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp)
-                    ) {
-                        Text(
-                            text = "Total Platform Expense",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 15.sp
+                val pagerState = rememberPagerState(pageCount = { 2 })
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+
+                    if (page == 0) {
+                        AdminTopSummaryCard(
+                            title = "Total Platform Expense",
+                            amount = "Rs. $totalExpenseAmount",
+                            subtitle = "Across all active users",
+                            color = primaryColor
                         )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Rs. 8,50,000",
-                            color = Color.White,
-                            fontSize = 34.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "Across all active users",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 14.sp
+                    } else {
+                        AdminTopSummaryCard(
+                            title = "Total Platform Budget",
+                            amount = "Rs. $totalBudgetAmount",
+                            subtitle = "Across all active users",
+                            color = successColor
                         )
                     }
                 }
@@ -190,21 +291,30 @@ fun AdminDashboardBody() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+
                     AdminStatCard(
                         title = "Users",
-                        value = "120",
+                        value = "$totalUsers",
                         color = lightBlue,
                         textColor = primaryColor,
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(
+                            Intent(context, AdminManageUsersActivity::class.java)
+                        )
+                    }
 
                     AdminStatCard(
                         title = "Budgets",
-                        value = "86",
-                        color = Color(0xFFE8F7EF),
-                        textColor = Color(0xFF00A86B),
+                        value = "$totalBudgets",
+                        color = successColor.copy(alpha = 0.15f),
+                        textColor = successColor,
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(
+                            Intent(context, AdminBudgetActivity::class.java)
+                        )
+                    }
                 }
             }
 
@@ -213,21 +323,31 @@ fun AdminDashboardBody() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+
                     AdminStatCard(
                         title = "Expenses",
-                        value = "430",
-                        color = Color(0xFFFFF4D9),
-                        textColor = Color(0xFFE65100),
+                        value = "$totalExpenses",
+                        color = Color(0xFFFFA000).copy(alpha = 0.15f),
+                        textColor = Color(0xFFFFA000),
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(
+                            Intent(context, AdminExpenseActivity::class.java)
+                        )
+                    }
 
                     AdminStatCard(
                         title = "Blocked",
-                        value = "4",
-                        color = Color(0xFFFFEEEE),
-                        textColor = Color(0xFFE53935),
+                        value = "$blockedUsers",
+                        color = errorColor.copy(alpha = 0.15f),
+                        textColor = errorColor,
                         modifier = Modifier.weight(1f)
-                    )
+                    ) {
+                        context.startActivity(
+                            Intent(context, AdminManageUsersActivity::class.java)
+                                .putExtra("filter", "blocked")
+                        )
+                    }
                 }
             }
 
@@ -245,6 +365,7 @@ fun AdminDashboardBody() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+
                     AdminActionCard(
                         title = "Manage Users",
                         color = lightBlue,
@@ -258,8 +379,8 @@ fun AdminDashboardBody() {
 
                     AdminActionCard(
                         title = "View Reports",
-                        color = Color(0xFFE8F7EF),
-                        textColor = Color(0xFF00A86B),
+                        color = successColor.copy(alpha = 0.15f),
+                        textColor = successColor,
                         modifier = Modifier.weight(1f)
                     ) {
                         context.startActivity(
@@ -278,40 +399,31 @@ fun AdminDashboardBody() {
                 )
             }
 
-            item {
-                AdminRecentUserCard(
-                    name = "Pratik Joshi",
-                    email = "pratik@example.com",
-                    status = "Active",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue,
-                    darkText = darkText,
-                    grayText = grayText
-                )
-            }
-
-            item {
-                AdminRecentUserCard(
-                    name = "Aayush Sharma",
-                    email = "aayush@example.com",
-                    status = "Active",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue,
-                    darkText = darkText,
-                    grayText = grayText
-                )
-            }
-
-            item {
-                AdminRecentUserCard(
-                    name = "Blocked User",
-                    email = "blocked@example.com",
-                    status = "Blocked",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue,
-                    darkText = darkText,
-                    grayText = grayText
-                )
+            if (recentUsers.isEmpty()) {
+                item {
+                    Text(
+                        text = "No users found",
+                        color = grayText,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                recentUsers.forEach { user ->
+                    item {
+                        AdminRecentUserCard(
+                            name = user.name.ifEmpty { "No Name" },
+                            email = user.email,
+                            status = if (user.blocked) "Blocked" else "Active",
+                            primaryColor = primaryColor,
+                            lightBlue = lightBlue,
+                            darkText = darkText,
+                            grayText = grayText,
+                            surfaceColor = surfaceColor,
+                            errorColor = errorColor,
+                            successColor = successColor
+                        )
+                    }
+                }
             }
         }
     }
@@ -323,14 +435,15 @@ fun AdminStatCard(
     value: String,
     color: Color,
     textColor: Color,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.height(90.dp),
+        modifier = modifier
+            .height(90.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Column(
             modifier = Modifier
@@ -370,9 +483,7 @@ fun AdminActionCard(
             .height(75.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -396,17 +507,18 @@ fun AdminRecentUserCard(
     primaryColor: Color,
     lightBlue: Color,
     darkText: Color,
-    grayText: Color
+    grayText: Color,
+    surfaceColor: Color,
+    errorColor: Color,
+    successColor: Color
 ) {
     val statusColor =
-        if (status == "Blocked") Color(0xFFE53935) else Color(0xFF00A86B)
+        if (status == "Blocked") errorColor else successColor
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = surfaceColor)
     ) {
         Row(
             modifier = Modifier
@@ -414,6 +526,7 @@ fun AdminRecentUserCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Box(
                 modifier = Modifier
                     .size(45.dp)
@@ -430,9 +543,7 @@ fun AdminRecentUserCard(
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = name,
                     color = darkText,
@@ -452,6 +563,44 @@ fun AdminRecentUserCard(
                 color = statusColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp
+            )
+        }
+    }
+}
+@Composable
+fun AdminTopSummaryCard(
+    title: String,
+    amount: String,
+    subtitle: String,
+    color: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(25.dp),
+        colors = CardDefaults.cardColors(containerColor = color)
+    ) {
+        Column(modifier = Modifier.padding(22.dp)) {
+            Text(
+                text = title,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 15.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = amount,
+                color = Color.White,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = subtitle,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 14.sp
             )
         }
     }

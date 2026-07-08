@@ -1,6 +1,9 @@
 package com.example.budgetbuddy.view
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -25,9 +28,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.budgetbuddy.model.ExpenseModel
+import com.example.budgetbuddy.model.NotificationModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.NotificationHelper
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
 import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.NotificationViewModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class ExpenseActivity : ComponentActivity() {
@@ -35,8 +46,28 @@ class ExpenseActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    100
+                )
+            }
+        }
+
+        val themeManager = ThemeManager(this)
+
         setContent {
-            ExpenseBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                ExpenseBody()
+            }
         }
     }
 }
@@ -49,26 +80,31 @@ fun ExpenseBody() {
     var amount by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
 
     var expenseList by remember { mutableStateOf<List<ExpenseModel>>(emptyList()) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteId by remember { mutableStateOf("") }
+
 
     val context = LocalContext.current
     val activity = context as? Activity
 
     val expenseViewModel: ExpenseViewModel = viewModel()
     val userViewModel: UserViewModel = viewModel()
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val notificationViewModel: NotificationViewModel = viewModel()
 
     val userId = userViewModel.getCurrentUserId() ?: ""
 
-    val primaryColor = Color(0xFF4A6CF7)
-    val backgroundColor = Color(0xFFF8FAFF)
-    val lightBlue = Color(0xFFEAF0FF)
-    val darkText = Color(0xFF1E1E1E)
-    val grayText = Color(0xFF7A7A7A)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val lightBlue = MaterialTheme.colorScheme.surface
+    val darkText = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+    val errorColor = MaterialTheme.colorScheme.error
 
-    val categories = listOf("All", "Food", "Travel", "Shopping", "Bills")
+    val categories = listOf("All", "Food", "Travel", "Shopping", "Bills", "Others")
     var selectedCategory by remember { mutableStateOf("All") }
 
     fun loadExpenses() {
@@ -173,9 +209,12 @@ fun ExpenseBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
+
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
@@ -208,35 +247,80 @@ fun ExpenseBody() {
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        OutlinedTextField(
-                            value = category,
-                            onValueChange = { category = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Category: Food / Travel / Shopping / Bills") },
-                            shape = RoundedCornerShape(15.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = lightBlue,
-                                unfocusedContainerColor = lightBlue,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = {
+                                expanded = !expanded
+                            }
+                        ) {
+                            OutlinedTextField(
+                                value = category,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                placeholder = {
+                                    Text("Select Category")
+                                },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                                },
+                                shape = RoundedCornerShape(15.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = lightBlue,
+                                    unfocusedContainerColor = lightBlue,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
                             )
-                        )
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = {
+                                    expanded = false
+                                }
+                            ) {
+                                listOf("Food", "Travel", "Shopping", "Bills", "Others").forEach { item ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(item)
+                                        },
+                                        onClick = {
+                                            category = item
+                                            expanded = false
+
+                                            if (item != "Others") {
+                                                note = ""
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        OutlinedTextField(
-                            value = note,
-                            onValueChange = { note = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Note") },
-                            shape = RoundedCornerShape(15.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = lightBlue,
-                                unfocusedContainerColor = lightBlue,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
+                        if (category == "Others") {
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            OutlinedTextField(
+                                value = note,
+                                onValueChange = { note = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = {
+                                    Text("Write other category note")
+                                },
+                                shape = RoundedCornerShape(15.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = lightBlue,
+                                    unfocusedContainerColor = lightBlue,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                )
                             )
-                        )
+                        }
 
                         Spacer(modifier = Modifier.height(18.dp))
 
@@ -250,6 +334,7 @@ fun ExpenseBody() {
                                     ).show()
                                     return@Button
                                 }
+
                                 if (title.isEmpty() || amount.isEmpty() || category.isEmpty()) {
                                     Toast.makeText(
                                         context,
@@ -276,6 +361,7 @@ fun ExpenseBody() {
                                         )
 
                                         expenseViewModel.addExpense(expenseModel) { success, message ->
+
                                             Toast.makeText(
                                                 context,
                                                 message,
@@ -283,11 +369,86 @@ fun ExpenseBody() {
                                             ).show()
 
                                             if (success) {
+
+                                                notificationViewModel.addNotification(
+                                                    NotificationModel(
+                                                        title = "Expense Added",
+                                                        message = "${expenseModel.title} expense of Rs. ${expenseModel.amount} was added.",
+                                                        date = System.currentTimeMillis().toString(),
+                                                        target = userId,
+                                                        read = false
+                                                    )
+                                                ) { _, _ -> }
+
                                                 title = ""
                                                 amount = ""
                                                 category = ""
                                                 note = ""
+
                                                 loadExpenses()
+
+                                                budgetViewModel.getBudgetByUser(userId) { budgetSuccess, _, budgets ->
+
+                                                    if (budgetSuccess) {
+
+                                                        expenseViewModel.getExpenseByUser(userId) { expenseSuccess, _, expenses ->
+
+                                                            if (expenseSuccess) {
+
+                                                                val totalBudget = budgets.sumOf { it.amount }
+                                                                val totalSpent = expenses.sumOf { it.amount }
+
+                                                                if (totalBudget > 0) {
+
+                                                                    val usedPercent =
+                                                                        (totalSpent / totalBudget) * 100
+
+                                                                    if (totalSpent > totalBudget) {
+
+                                                                        NotificationHelper.showBudgetNotification(
+                                                                            context = context,
+                                                                            title = "Budget Crossed",
+                                                                            message = "You spent Rs. $totalSpent out of Rs. $totalBudget."
+                                                                        )
+
+                                                                        notificationViewModel.addNotification(NotificationModel(
+                                                                            title = "Budget Crossed",
+                                                                            message = "You spent Rs. $totalSpent out of Rs. $totalBudget.",
+                                                                            date = System.currentTimeMillis().toString(),
+                                                                            target = userId,
+                                                                            read = false
+                                                                        )
+                                                                        ) { _, _ -> }
+
+                                                                    } else if (usedPercent >= 75) {
+
+                                                                        NotificationHelper.showBudgetNotification(
+                                                                            context = context,
+                                                                            title = "Budget Alert",
+                                                                            message = "You used ${usedPercent.toInt()}% of your budget."
+                                                                        )
+
+                                                                        notificationViewModel.addNotification(
+                                                                            NotificationModel(
+                                                                                title = "Budget Alert",
+                                                                                message = "You used ${usedPercent.toInt()}% of your budget.",
+                                                                                date = System.currentTimeMillis().toString(),
+                                                                                target = userId,
+                                                                                read = false
+                                                                            )
+                                                                        ) { _, _ -> }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                Toast.makeText(
+                                                    context,
+                                                    "Expense added. Check dashboard for budget status.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             }
                                         }
                                     }
@@ -374,6 +535,7 @@ fun ExpenseBody() {
                         primaryColor = primaryColor,
                         darkText = darkText,
                         grayText = grayText,
+                        errorColor = errorColor,
                         onDelete = {
                             deleteId = expense.expenseId
                             showDeleteDialog = true
@@ -383,29 +545,22 @@ fun ExpenseBody() {
             }
         }
     }
+
     if (showDeleteDialog) {
-
         AlertDialog(
-
             onDismissRequest = {
                 showDeleteDialog = false
             },
-
             title = {
                 Text("Delete Expense")
             },
-
             text = {
                 Text("Are you sure you want to delete this expense?")
             },
-
             confirmButton = {
-
                 Button(
                     onClick = {
-
                         expenseViewModel.deleteExpense(deleteId) { success, message ->
-
                             Toast.makeText(
                                 context,
                                 message,
@@ -415,41 +570,27 @@ fun ExpenseBody() {
                             if (success) {
                                 loadExpenses()
                             }
-
                         }
 
                         showDeleteDialog = false
-
                     },
-
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
+                        containerColor = errorColor
                     )
-
                 ) {
-
                     Text("Delete")
-
                 }
-
             },
-
             dismissButton = {
-
                 OutlinedButton(
                     onClick = {
                         showDeleteDialog = false
                     }
                 ) {
-
                     Text("Cancel")
-
                 }
-
             }
-
         )
-
     }
 }
 
@@ -487,12 +628,15 @@ fun ExpenseCard(
     primaryColor: Color,
     darkText: Color,
     grayText: Color,
+    errorColor: Color,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -530,7 +674,7 @@ fun ExpenseCard(
 
                 Text(
                     text = amount,
-                    color = Color(0xFFE53935),
+                    color = errorColor,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
@@ -546,14 +690,14 @@ fun ExpenseCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
-                        tint = Color(0xFFE53935)
+                        tint = errorColor
                     )
 
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
                         text = "Delete",
-                        color = Color(0xFFE53935)
+                        color = errorColor
                     )
                 }
             }

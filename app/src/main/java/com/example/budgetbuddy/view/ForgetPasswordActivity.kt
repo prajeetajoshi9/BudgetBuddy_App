@@ -12,12 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,21 +21,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.ThemeManager
 import com.example.budgetbuddy.viewmodel.UserViewModel
 
 class ForgetPasswordActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            ForgetPasswordBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                ForgetPasswordBody()
+            }
         }
     }
 }
@@ -52,15 +53,18 @@ fun ForgetPasswordBody() {
 
     val context = LocalContext.current
     val activity = context as? Activity
-
     val userViewModel: UserViewModel = viewModel()
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFF))
+            .background(backgroundColor)
             .padding(horizontal = 25.dp),
-
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -69,7 +73,7 @@ fun ForgetPasswordBody() {
         Text(
             text = "Forget Password",
             style = TextStyle(
-                color = Color(0xFF4A6CF7),
+                color = primaryColor,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -80,40 +84,28 @@ fun ForgetPasswordBody() {
 
         Text(
             text = "Enter your registered email address",
-            style = TextStyle(
-                color = Color(0xFF7A7A7A),
-                fontSize = 15.sp
-            )
+            color = grayText,
+            fontSize = 15.sp
         )
 
         Spacer(modifier = Modifier.height(45.dp))
 
         OutlinedTextField(
             value = email,
-            onValueChange = {
-                email = it
-            },
-
+            onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-
-            placeholder = {
-                Text("Enter Email")
-            },
-
+            placeholder = { Text("Enter Email") },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
+                    tint = primaryColor
                 )
             },
-
             shape = RoundedCornerShape(15.dp),
-
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
-
+                focusedContainerColor = surfaceColor,
+                unfocusedContainerColor = surfaceColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -122,21 +114,15 @@ fun ForgetPasswordBody() {
         Spacer(modifier = Modifier.height(35.dp))
 
         Button(
-
             onClick = {
-
                 if (email.isEmpty()) {
-
                     Toast.makeText(
                         context,
                         "Please enter your email",
                         Toast.LENGTH_LONG
                     ).show()
-
                 } else {
-
                     userViewModel.forgetPassword(email) { success, message ->
-
                         Toast.makeText(
                             context,
                             message,
@@ -148,21 +134,15 @@ fun ForgetPasswordBody() {
                         }
                     }
                 }
-
             },
-
             modifier = Modifier
                 .fillMaxWidth()
                 .height(55.dp),
-
             shape = RoundedCornerShape(15.dp),
-
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A6CF7)
+                containerColor = primaryColor
             )
-
         ) {
-
             Text(
                 text = "Send Reset Link",
                 color = Color.White,
@@ -175,19 +155,11 @@ fun ForgetPasswordBody() {
 
         Text(
             text = "Back to Login",
-
             modifier = Modifier.clickable {
                 activity?.finish()
             },
-
-            color = Color(0xFF4A6CF7),
+            color = primaryColor,
             fontWeight = FontWeight.Bold
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ForgetPreview() {
-    ForgetPasswordBody()
 }

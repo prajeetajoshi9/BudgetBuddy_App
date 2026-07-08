@@ -6,7 +6,6 @@ data class UserModel(
     val email: String = "",
     val contact: String = "",
     val address: String = "",
-    val imageUrl: String = "",
     val role: String = "user",
     val blocked: Boolean = false
 )

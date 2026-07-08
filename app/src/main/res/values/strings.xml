@@ -17,4 +17,6 @@
     <string name="title_activity_admin_manage_users">AdminManageUsersActivity</string>
     <string name="title_activity_admin_report">AdminReportActivity</string>
     <string name="title_activity_history">HistoryActivity</string>
+    <string name="title_activity_admin_budget">AdminBudgetActivity</string>
+    <string name="title_activity_admin_expense">AdminExpenseActivity</string>
 </resources>

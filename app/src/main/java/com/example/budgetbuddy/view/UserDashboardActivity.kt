@@ -32,17 +32,40 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.budgetbuddy.model.ExpenseModel
+import com.example.budgetbuddy.utils.ThemeManager
 import com.example.budgetbuddy.viewmodel.BudgetViewModel
 import com.example.budgetbuddy.viewmodel.ExpenseViewModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
 
 class UserDashboardActivity : ComponentActivity() {
+
+    private var lastDarkMode: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+        lastDarkMode = themeManager.isDarkMode()
+
         setContent {
-            UserDashboardBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                UserDashboardBody()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val themeManager = ThemeManager(this)
+        val currentDarkMode = themeManager.isDarkMode()
+
+        if (currentDarkMode != lastDarkMode) {
+            recreate()
         }
     }
 }
@@ -116,6 +139,14 @@ fun UserDashboardBody() {
         } else {
             0f
         }
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val secondaryText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+    val errorColor = MaterialTheme.colorScheme.error
+    val successColor = Color(0xFF00A86B)
+    val lightBlue = MaterialTheme.colorScheme.surface
 
     Scaffold(
         floatingActionButton = {
@@ -123,7 +154,7 @@ fun UserDashboardBody() {
                 onClick = {
                     context.startActivity(Intent(context, ExpenseActivity::class.java))
                 },
-                containerColor = Color(0xFF4A6CF7)
+                containerColor = primaryColor
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -134,7 +165,8 @@ fun UserDashboardBody() {
         },
 
         bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+            NavigationBar(
+                containerColor = surfaceColor) {
                 NavigationBarItem(
                     selected = true,
                     onClick = {},
@@ -175,7 +207,7 @@ fun UserDashboardBody() {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8FAFF))
+                .background(backgroundColor)
                 .padding(paddingValues)
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -189,14 +221,14 @@ fun UserDashboardBody() {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Hello $userName",
-                            color = Color(0xFF1E1E1E),
+                            color = textColor,
                             fontSize = 23.sp,
                             fontWeight = FontWeight.Bold
                         )
 
                         Text(
                             text = "Welcome back to BudgetBuddy",
-                            color = Color(0xFF7A7A7A),
+                            color = secondaryText,
                             fontSize = 14.sp
                         )
                     }
@@ -205,7 +237,7 @@ fun UserDashboardBody() {
                         modifier = Modifier
                             .size(45.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEAF0FF))
+                            .background(surfaceColor)
                             .clickable {
                                 context.startActivity(
                                     Intent(context, NotificationActivity::class.java)
@@ -216,7 +248,7 @@ fun UserDashboardBody() {
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = null,
-                            tint = Color(0xFF4A6CF7)
+                            tint = primaryColor
                         )
                     }
                 }
@@ -229,7 +261,7 @@ fun UserDashboardBody() {
                         .height(200.dp),
                     shape = RoundedCornerShape(25.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF4A6CF7)
+                        containerColor = primaryColor
                     )
                 ) {
                     Column(
@@ -281,12 +313,12 @@ fun UserDashboardBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor)
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
                             text = "Monthly Budget",
-                            color = Color(0xFF1E1E1E),
+                            color = textColor,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -299,15 +331,15 @@ fun UserDashboardBody() {
                                 .fillMaxWidth()
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(10.dp)),
-                            color = Color(0xFF4A6CF7),
-                            trackColor = Color(0xFFEAF0FF)
+                            color = primaryColor,
+                            trackColor = lightBlue
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = "Rs. $totalSpent used out of Rs. $totalBudget",
-                            color = Color(0xFF7A7A7A),
+                            color = secondaryText,
                             fontSize = 13.sp
                         )
 
@@ -330,12 +362,22 @@ fun UserDashboardBody() {
                             containerColor = Color(0xFFFFEEEE)
                         )
                     ) {
-                        Text(
-                            text = "Budget crossed! You spent more than your budget.",
-                            modifier = Modifier.padding(16.dp),
-                            color = Color(0xFFE53935),
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Budget Alert",
+                                color = Color(0xFFE53935),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(5.dp))
+
+                            Text(
+                                text = "You crossed your budget by Rs. ${-budgetLeft}.",
+                                color = Color(0xFFE53935),
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
@@ -345,7 +387,7 @@ fun UserDashboardBody() {
                     text = "Quick Actions",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E1E1E)
+                    color = textColor
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -389,7 +431,7 @@ fun UserDashboardBody() {
                     text = "Recent Transactions",
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E1E1E)
+                    color = textColor
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -397,25 +439,28 @@ fun UserDashboardBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor)
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 15.dp)) {
                         if (recentExpenses.isEmpty()) {
                             Text(
                                 text = "No recent transactions",
                                 modifier = Modifier.padding(vertical = 14.dp),
-                                color = Color(0xFF7A7A7A)
+                                color = secondaryText
                             )
                         } else {
                             recentExpenses.forEachIndexed { index, expense ->
                                 TransactionItem(
                                     title = expense.title,
                                     category = expense.category,
-                                    amount = "- Rs. ${expense.amount}"
+                                    amount = "- Rs. ${expense.amount}",
+                                    textColor = textColor,
+                                    secondaryText = secondaryText,
+                                    errorColor = errorColor
                                 )
 
                                 if (index != recentExpenses.lastIndex) {
-                                    HorizontalDivider(color = Color(0xFFEAEAEA))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                 }
                             }
                         }
@@ -483,7 +528,10 @@ fun ActionCard(
 fun TransactionItem(
     title: String,
     category: String,
-    amount: String
+    amount: String,
+    textColor: Color,
+    secondaryText: Color,
+    errorColor: Color
 ) {
     Row(
         modifier = Modifier
@@ -496,19 +544,19 @@ fun TransactionItem(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
-                color = Color(0xFF1E1E1E)
+                color = textColor
             )
 
             Text(
                 text = category,
-                color = Color(0xFF7A7A7A),
+                color = secondaryText,
                 fontSize = 12.sp
             )
         }
 
         Text(
             text = amount,
-            color = Color(0xFFE53935),
+            color = errorColor,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp
         )

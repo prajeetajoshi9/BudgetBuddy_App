@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.budgetbuddy.model.BudgetModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.ThemeManager
 import com.example.budgetbuddy.viewmodel.BudgetViewModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
 
@@ -33,8 +35,14 @@ class BudgetActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            BudgetBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                BudgetBody()
+            }
         }
     }
 }
@@ -47,6 +55,7 @@ fun BudgetBody() {
     var budgetAmount by remember { mutableStateOf("") }
     var budgetMonth by remember { mutableStateOf("") }
     var budgetList by remember { mutableStateOf<List<BudgetModel>>(emptyList()) }
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedBudgetId by remember { mutableStateOf("") }
 
@@ -58,12 +67,12 @@ fun BudgetBody() {
 
     val userId = userViewModel.getCurrentUserId() ?: ""
 
-
-    val primaryColor = Color(0xFF4A6CF7)
-    val backgroundColor = Color(0xFFF8FAFF)
-    val lightBlue = Color(0xFFEAF0FF)
-    val darkText = Color(0xFF1E1E1E)
-    val grayText = Color(0xFF7A7A7A)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val darkText = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+    val errorColor = MaterialTheme.colorScheme.error
 
     fun loadBudgets() {
         if (userId.isNotEmpty()) {
@@ -163,7 +172,7 @@ fun BudgetBody() {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor)
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
 
@@ -174,8 +183,8 @@ fun BudgetBody() {
                             placeholder = { Text("Budget Title") },
                             shape = RoundedCornerShape(15.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = lightBlue,
-                                unfocusedContainerColor = lightBlue,
+                                focusedContainerColor = surfaceColor,
+                                unfocusedContainerColor = surfaceColor,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             )
@@ -190,8 +199,8 @@ fun BudgetBody() {
                             placeholder = { Text("Budget Amount") },
                             shape = RoundedCornerShape(15.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = lightBlue,
-                                unfocusedContainerColor = lightBlue,
+                                focusedContainerColor = surfaceColor,
+                                unfocusedContainerColor = surfaceColor,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             )
@@ -206,8 +215,8 @@ fun BudgetBody() {
                             placeholder = { Text("Month Example: July 2026") },
                             shape = RoundedCornerShape(15.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = lightBlue,
-                                unfocusedContainerColor = lightBlue,
+                                focusedContainerColor = surfaceColor,
+                                unfocusedContainerColor = surfaceColor,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             )
@@ -225,6 +234,7 @@ fun BudgetBody() {
                                     ).show()
                                     return@Button
                                 }
+
                                 if (budgetTitle.isEmpty() || budgetAmount.isEmpty() || budgetMonth.isEmpty()) {
                                     Toast.makeText(
                                         context,
@@ -249,7 +259,6 @@ fun BudgetBody() {
                                         )
 
                                         budgetViewModel.addBudget(budgetModel) { success, message ->
-
                                             Toast.makeText(
                                                 context,
                                                 message,
@@ -316,6 +325,10 @@ fun BudgetBody() {
                         title = budget.title,
                         amount = "Rs. ${budget.amount}",
                         used = budget.month,
+                        primaryColor = primaryColor,
+                        darkText = darkText,
+                        grayText = grayText,
+                        errorColor = errorColor,
                         onDelete = {
                             selectedBudgetId = budget.budgetId
                             showDeleteDialog = true
@@ -325,28 +338,21 @@ fun BudgetBody() {
             }
         }
     }
+
     if (showDeleteDialog) {
-
         AlertDialog(
-
             onDismissRequest = {
                 showDeleteDialog = false
             },
-
             title = {
                 Text("Delete Budget")
             },
-
             text = {
                 Text("Are you sure you want to delete this budget?")
             },
-
             confirmButton = {
-
                 Button(
-
                     onClick = {
-
                         budgetViewModel.deleteBudget(
                             selectedBudgetId
                         ) { success, message ->
@@ -360,30 +366,25 @@ fun BudgetBody() {
                             if (success) {
                                 loadBudgets()
                             }
-
                         }
 
                         showDeleteDialog = false
-                    }
-
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = errorColor
+                    )
                 ) {
                     Text("Delete")
                 }
-
             },
-
             dismissButton = {
-
                 TextButton(
-
                     onClick = {
                         showDeleteDialog = false
                     }
-
                 ) {
                     Text("Cancel")
                 }
-
             }
         )
     }
@@ -394,12 +395,18 @@ fun BudgetHistoryCard(
     title: String,
     amount: String,
     used: String,
+    primaryColor: Color,
+    darkText: Color,
+    grayText: Color,
+    errorColor: Color,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -410,14 +417,14 @@ fun BudgetHistoryCard(
             Column {
                 Text(
                     text = title,
-                    color = Color(0xFF1E1E1E),
+                    color = darkText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
 
                 Text(
                     text = used,
-                    color = Color(0xFF7A7A7A),
+                    color = grayText,
                     fontSize = 13.sp
                 )
             }
@@ -425,7 +432,7 @@ fun BudgetHistoryCard(
             Row {
                 Text(
                     text = amount,
-                    color = Color(0xFF4A6CF7),
+                    color = primaryColor,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -435,7 +442,7 @@ fun BudgetHistoryCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
-                        tint = Color(0xFFE53935)
+                        tint = errorColor
                     )
                 }
             }

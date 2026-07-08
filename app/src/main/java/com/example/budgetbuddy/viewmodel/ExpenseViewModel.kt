@@ -29,4 +29,9 @@ class ExpenseViewModel : ViewModel() {
     ) {
         repo.deleteExpense(expenseId, callback)
     }
+    fun getAllExpenses(
+        callback: (Boolean, String, List<ExpenseModel>) -> Unit
+    ) {
+        repo.getAllExpenses(callback)
+    }
 }

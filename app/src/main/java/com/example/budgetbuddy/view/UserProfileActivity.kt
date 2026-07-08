@@ -27,15 +27,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.budgetbuddy.model.UserModel
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
 import com.example.budgetbuddy.viewmodel.UserViewModel
+
 
 class UserProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            UserProfileBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                UserProfileBody()
+            }
         }
     }
 }
@@ -49,7 +58,13 @@ fun UserProfileBody() {
     val userViewModel: UserViewModel = viewModel()
 
     var user by remember { mutableStateOf<UserModel?>(null) }
-    var darkMode by remember { mutableStateOf(false) }
+    val themeManager = remember {
+        ThemeManager(context)
+    }
+
+    var darkMode by remember {
+        mutableStateOf(themeManager.isDarkMode())
+    }
 
     var showEditDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
@@ -73,11 +88,11 @@ fun UserProfileBody() {
         }
     }
 
-    val primaryColor = Color(0xFF4A6CF7)
-    val backgroundColor = Color(0xFFF8FAFF)
-    val lightBlue = Color(0xFFEAF0FF)
-    val darkText = Color(0xFF1E1E1E)
-    val grayText = Color(0xFF7A7A7A)
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val lightBlue = MaterialTheme.colorScheme.surface
+    val darkText = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
     val redColor = Color(0xFFE53935)
 
     Scaffold(
@@ -164,7 +179,7 @@ fun UserProfileBody() {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Row(
                     modifier = Modifier
@@ -201,10 +216,22 @@ fun UserProfileBody() {
                             fontSize = 13.sp
                         )
                     }
-
                     Switch(
                         checked = darkMode,
-                        onCheckedChange = { darkMode = it }
+                        onCheckedChange = {
+
+                            darkMode = it
+
+                            themeManager.saveDarkMode(it)
+
+                            Toast.makeText(
+                                context,
+                                if (it) "Dark Mode Enabled" else "Light Mode Enabled",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            activity?.recreate()
+                        }
                     )
                 }
             }
@@ -415,7 +442,7 @@ fun ProfileInfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor =MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier

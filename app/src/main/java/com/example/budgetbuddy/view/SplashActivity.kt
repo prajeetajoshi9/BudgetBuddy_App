@@ -1,17 +1,14 @@
 package com.example.budgetbuddy.view
 
-import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -22,6 +19,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.budgetbuddy.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.delay
 
 class SplashActivity : ComponentActivity() {
@@ -30,9 +29,7 @@ class SplashActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-
             SplashBody()
-
         }
     }
 }
@@ -45,20 +42,37 @@ fun SplashBody() {
     LaunchedEffect(Unit) {
         delay(1500)
 
-        val sharedPreferences = context.getSharedPreferences(
-            "User",
-            Context.MODE_PRIVATE
-        )
+        val currentUser = FirebaseAuth.getInstance().currentUser
 
-        val isLoggedIn = sharedPreferences.getBoolean(
-            "isLoggedIn",
-            false
-        )
-
-        if (isLoggedIn) {
-
+        if (currentUser == null) {
+            context.startActivity(
+                Intent(context, LoginActivity::class.java)
+            )
         } else {
+            FirebaseDatabase.getInstance()
+                .reference
+                .child("users")
+                .child(currentUser.uid)
+                .get()
+                .addOnSuccessListener { snapshot ->
 
+                    val role = snapshot.child("role").value.toString()
+
+                    if (role == "admin") {
+                        context.startActivity(
+                            Intent(context, AdminDashboardActivity::class.java)
+                        )
+                    } else {
+                        context.startActivity(
+                            Intent(context, UserDashboardActivity::class.java)
+                        )
+                    }
+                }
+                .addOnFailureListener {
+                    context.startActivity(
+                        Intent(context, LoginActivity::class.java)
+                    )
+                }
         }
     }
 
@@ -66,11 +80,9 @@ fun SplashBody() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFF)),
-
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Image(
             painter = painterResource(R.drawable.logo),
             contentDescription = null,
@@ -78,13 +90,13 @@ fun SplashBody() {
                 .height(400.dp)
                 .width(400.dp)
         )
+
+        CircularProgressIndicator()
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SplashPreview() {
-
     SplashBody()
-
 }

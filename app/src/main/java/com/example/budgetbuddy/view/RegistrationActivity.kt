@@ -1,6 +1,7 @@
 package com.example.budgetbuddy.view
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -13,11 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,13 +26,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.model.NotificationModel
 import com.example.budgetbuddy.model.UserModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.viewmodel.NotificationViewModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
-import android.content.Intent
 
 class RegistrationActivity : ComponentActivity() {
 
@@ -43,8 +42,14 @@ class RegistrationActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            RegistrationBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                RegistrationBody()
+            }
         }
     }
 }
@@ -64,13 +69,20 @@ fun RegistrationBody() {
 
     val context = LocalContext.current
     val activity = context as? Activity
-
     val userViewModel: UserViewModel = viewModel()
+
+    val notificationViewModel: NotificationViewModel = viewModel()
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val fieldColor = MaterialTheme.colorScheme.surface
+    val textColor = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFF))
+            .background(backgroundColor)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 25.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -81,7 +93,7 @@ fun RegistrationBody() {
         Text(
             text = "Sign Up",
             style = TextStyle(
-                color = Color(0xFF4A6CF7),
+                color = primaryColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 30.sp,
                 textAlign = TextAlign.Center
@@ -92,7 +104,7 @@ fun RegistrationBody() {
 
         Text(
             text = "Create your account",
-            color = Color(0xFF7A7A7A),
+            color = grayText,
             fontSize = 15.sp
         )
 
@@ -104,16 +116,12 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Full Name") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Person, contentDescription = null, tint = primaryColor)
             },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -127,16 +135,12 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Address") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Home, contentDescription = null, tint = primaryColor)
             },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -150,16 +154,12 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Contact") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Phone,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Phone, contentDescription = null, tint = primaryColor)
             },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -173,16 +173,12 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Email") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Email, contentDescription = null, tint = primaryColor)
             },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -196,32 +192,25 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Create Password") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor)
             },
             trailingIcon = {
                 Text(
                     text = if (visibility) "Hide" else "Show",
                     modifier = Modifier
                         .padding(end = 12.dp)
-                        .clickable {
-                            visibility = !visibility
-                        },
-                    color = Color(0xFF4A6CF7),
+                        .clickable { visibility = !visibility },
+                    color = primaryColor,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
             },
             visualTransformation =
-                if (visibility) VisualTransformation.None
-                else PasswordVisualTransformation(),
+                if (visibility) VisualTransformation.None else PasswordVisualTransformation(),
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -235,32 +224,25 @@ fun RegistrationBody() {
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Confirm Password") },
             leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
-                )
+                Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor)
             },
             trailingIcon = {
                 Text(
                     text = if (confirmVisibility) "Hide" else "Show",
                     modifier = Modifier
                         .padding(end = 12.dp)
-                        .clickable {
-                            confirmVisibility = !confirmVisibility
-                        },
-                    color = Color(0xFF4A6CF7),
+                        .clickable { confirmVisibility = !confirmVisibility },
+                    color = primaryColor,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
             },
             visualTransformation =
-                if (confirmVisibility) VisualTransformation.None
-                else PasswordVisualTransformation(),
+                if (confirmVisibility) VisualTransformation.None else PasswordVisualTransformation(),
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = fieldColor,
+                unfocusedContainerColor = fieldColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -270,7 +252,6 @@ fun RegistrationBody() {
 
         Button(
             onClick = {
-
                 if (
                     fullName.isEmpty() ||
                     address.isEmpty() ||
@@ -279,19 +260,10 @@ fun RegistrationBody() {
                     createPassword.isEmpty() ||
                     confirmPassword.isEmpty()
                 ) {
-                    Toast.makeText(
-                        context,
-                        "Please fill all fields",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_LONG).show()
                 } else if (createPassword != confirmPassword) {
-                    Toast.makeText(
-                        context,
-                        "Password does not match",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(context, "Password does not match", Toast.LENGTH_LONG).show()
                 } else {
-
                     val userModel = UserModel(
                         name = fullName,
                         email = email,
@@ -307,26 +279,39 @@ fun RegistrationBody() {
                         model = userModel
                     ) { success, message ->
 
-                        Toast.makeText(
-                            context,
-                            message,
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 
                         if (success) {
-                            val intent = Intent(context, LoginActivity::class.java)
-                            context.startActivity(intent)
+
+                            notificationViewModel.addNotification(
+                                NotificationModel(
+                                    title = "New User Registered",
+                                    message = "$fullName has joined BudgetBuddy.",
+                                    date = System.currentTimeMillis().toString(),
+                                    target = "admin",
+                                    read = false
+                                )
+                            ) { success, message ->
+
+                                if (!success) {
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+
+                            context.startActivity(Intent(context, LoginActivity::class.java))
                             activity?.finish()
                         }
                     }
+
                 }
             },
+
             modifier = Modifier
                 .fillMaxWidth()
                 .height(55.dp),
             shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A6CF7)
+                containerColor = primaryColor
             )
         ) {
             Text(
@@ -342,7 +327,7 @@ fun RegistrationBody() {
         Row {
             Text(
                 text = "Already have an account?",
-                color = Color(0xFF1E1E1E)
+                color = textColor
             )
 
             Spacer(modifier = Modifier.width(5.dp))
@@ -350,21 +335,14 @@ fun RegistrationBody() {
             Text(
                 text = "Login",
                 modifier = Modifier.clickable {
-                    val intent = Intent(context, LoginActivity::class.java)
-                    context.startActivity(intent)
+                    context.startActivity(Intent(context, LoginActivity::class.java))
                     activity?.finish()
                 },
-                color = Color(0xFF4A6CF7),
+                color = primaryColor,
                 fontWeight = FontWeight.Bold
             )
         }
 
         Spacer(modifier = Modifier.height(30.dp))
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RegistrationPreview() {
-    RegistrationBody()
 }

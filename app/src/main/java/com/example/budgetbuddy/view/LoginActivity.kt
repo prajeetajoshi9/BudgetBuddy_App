@@ -29,15 +29,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
 import com.example.budgetbuddy.viewmodel.UserViewModel
+
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            LoginBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                LoginBody()
+            }
         }
     }
 }
@@ -53,10 +62,16 @@ fun LoginBody() {
     val activity = context as? Activity
     val userViewModel: UserViewModel = viewModel()
 
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onBackground = MaterialTheme.colorScheme.onBackground
+    val onSurface = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFF))
+            .background(backgroundColor)
             .padding(horizontal = 25.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -66,7 +81,7 @@ fun LoginBody() {
         Text(
             text = "Sign In",
             style = TextStyle(
-                color = Color(0xFF4A6CF7),
+                color = primaryColor,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -77,7 +92,7 @@ fun LoginBody() {
 
         Text(
             text = "Welcome Back",
-            color = Color(0xFF7A7A7A),
+            color = onSurface,
             fontSize = 16.sp
         )
 
@@ -94,13 +109,13 @@ fun LoginBody() {
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
+                    tint = primaryColor
                 )
             },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = surfaceColor,
+                unfocusedContainerColor = surfaceColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -120,7 +135,7 @@ fun LoginBody() {
                     modifier = Modifier
                         .padding(end = 12.dp)
                         .clickable { visibility = !visibility },
-                    color = Color(0xFF4A6CF7),
+                    color = primaryColor,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
@@ -129,7 +144,7 @@ fun LoginBody() {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = Color(0xFF4A6CF7)
+                    tint = primaryColor
                 )
             },
             modifier = Modifier
@@ -138,8 +153,8 @@ fun LoginBody() {
             placeholder = { Text("Enter Password") },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEAF0FF),
-                unfocusedContainerColor = Color(0xFFEAF0FF),
+                focusedContainerColor = surfaceColor,
+                unfocusedContainerColor = surfaceColor,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             )
@@ -156,7 +171,7 @@ fun LoginBody() {
                         Intent(context, ForgetPasswordActivity::class.java)
                     )
                 },
-            color = Color(0xFF4A6CF7),
+            color = primaryColor,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.End
@@ -178,14 +193,14 @@ fun LoginBody() {
                         password = password
                     ) { success, message, role ->
 
-                        Toast.makeText(
-                            context,
-                            message,
-                            Toast.LENGTH_LONG
-                        ).show()
+                            Toast.makeText(
+                                context,
+                                message,
+                                Toast.LENGTH_LONG
+                            ).show()
 
                         if (success) {
-                            if (role == "admin") {
+                            if (role.trim().lowercase() == "admin") {
                                 context.startActivity(
                                     Intent(context, AdminDashboardActivity::class.java)
                                 )
@@ -205,7 +220,7 @@ fun LoginBody() {
                 .height(55.dp),
             shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A6CF7)
+                containerColor = primaryColor
             )
         ) {
             Text(
@@ -221,7 +236,7 @@ fun LoginBody() {
         Row {
             Text(
                 text = "Don't have an account?",
-                color = Color(0xFF1E1E1E)
+                color = onBackground
             )
 
             Spacer(modifier = Modifier.width(5.dp))
@@ -233,7 +248,7 @@ fun LoginBody() {
                         Intent(context, RegistrationActivity::class.java)
                     )
                 },
-                color = Color(0xFF4A6CF7),
+                color = primaryColor,
                 fontWeight = FontWeight.Bold
             )
         }

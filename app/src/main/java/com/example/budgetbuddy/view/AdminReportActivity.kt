@@ -1,5 +1,6 @@
 package com.example.budgetbuddy.view
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,27 +8,55 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
+import com.example.budgetbuddy.utils.ThemeManager
+import com.example.budgetbuddy.viewmodel.BudgetViewModel
+import com.example.budgetbuddy.viewmodel.ExpenseViewModel
+import com.example.budgetbuddy.viewmodel.UserViewModel
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import androidx.compose.ui.viewinterop.AndroidView
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import android.content.Intent
+import androidx.compose.ui.graphics.toArgb
+import android.graphics.Color as AndroidColor
+import androidx.core.content.FileProvider
+import com.example.budgetbuddy.utils.PdfHelper
 
 class AdminReportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val themeManager = ThemeManager(this)
+
         setContent {
-            AdminReportBody()
+            BudgetBuddyTheme(
+                darkTheme = themeManager.isDarkMode()
+            ) {
+                AdminReportBody()
+            }
         }
     }
 }
@@ -36,11 +65,56 @@ class AdminReportActivity : ComponentActivity() {
 @Composable
 fun AdminReportBody() {
 
-    val primaryColor = Color(0xFF4A6CF7)
-    val backgroundColor = Color(0xFFF8FAFF)
-    val lightBlue = Color(0xFFEAF0FF)
-    val darkText = Color(0xFF1E1E1E)
-    val grayText = Color(0xFF7A7A7A)
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val userViewModel: UserViewModel = viewModel()
+    val budgetViewModel: BudgetViewModel = viewModel()
+    val expenseViewModel: ExpenseViewModel = viewModel()
+
+    var totalUsers by remember { mutableStateOf(0) }
+    var activeUsers by remember { mutableStateOf(0) }
+    var blockedUsers by remember { mutableStateOf(0) }
+    var totalBudgets by remember { mutableStateOf(0) }
+    var totalExpenseAmount by remember { mutableStateOf(0.0) }
+    var categoryTotals by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val darkText = MaterialTheme.colorScheme.onBackground
+    val grayText = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+    val errorColor = MaterialTheme.colorScheme.error
+    val successColor = Color(0xFF00A86B)
+    val warningColor = Color(0xFFFFA000)
+
+    LaunchedEffect(Unit) {
+        userViewModel.getAllUsers { success, _, users ->
+            if (success) {
+                totalUsers = users.size
+                activeUsers = users.count { !it.blocked }
+                blockedUsers = users.count { it.blocked }
+            }
+        }
+
+        budgetViewModel.getAllBudgets { success, _, budgets ->
+            if (success) {
+                totalBudgets = budgets.size
+            }
+        }
+
+        expenseViewModel.getAllExpenses { success, _, expenses ->
+            if (success) {
+                totalExpenseAmount = expenses.sumOf { it.amount }
+
+                categoryTotals = expenses
+                    .groupBy { it.category }
+                    .mapValues { entry ->
+                        entry.value.sumOf { it.amount }
+                    }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = backgroundColor,
@@ -54,7 +128,7 @@ fun AdminReportBody() {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { activity?.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
@@ -98,7 +172,7 @@ fun AdminReportBody() {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Rs. 8,50,000",
+                            text = "Rs. $totalExpenseAmount",
                             color = Color.White,
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold
@@ -122,25 +196,25 @@ fun AdminReportBody() {
                 ) {
                     AdminReportSmallCard(
                         title = "Users",
-                        value = "120",
-                        color = lightBlue,
+                        value = "$totalUsers",
+                        color = surfaceColor,
                         textColor = primaryColor,
                         modifier = Modifier.weight(1f)
                     )
 
                     AdminReportSmallCard(
                         title = "Budgets",
-                        value = "86",
-                        color = Color(0xFFE8F7EF),
-                        textColor = Color(0xFF00A86B),
+                        value = "$totalBudgets",
+                        color = successColor.copy(alpha = 0.15f),
+                        textColor = successColor,
                         modifier = Modifier.weight(1f)
                     )
 
                     AdminReportSmallCard(
                         title = "Blocked",
-                        value = "4",
-                        color = Color(0xFFFFEEEE),
-                        textColor = Color(0xFFE53935),
+                        value = "$blockedUsers",
+                        color = errorColor.copy(alpha = 0.15f),
+                        textColor = errorColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -160,7 +234,7 @@ fun AdminReportBody() {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White
+                        containerColor = surfaceColor
                     )
                 ) {
                     Column(
@@ -168,20 +242,26 @@ fun AdminReportBody() {
                     ) {
                         AdminReportProgressRow(
                             title = "Active Users",
-                            value = "116",
-                            progress = 0.96f,
-                            color = Color(0xFF00A86B),
-                            trackColor = Color(0xFFE8F7EF)
+                            value = "$activeUsers",
+                            progress = if (totalUsers > 0)
+                                activeUsers.toFloat() / totalUsers
+                            else 0f,
+                            color = successColor,
+                            trackColor = successColor.copy(alpha = 0.15f),
+                            textColor = darkText
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         AdminReportProgressRow(
                             title = "Blocked Users",
-                            value = "4",
-                            progress = 0.04f,
-                            color = Color(0xFFE53935),
-                            trackColor = Color(0xFFFFEEEE)
+                            value = "$blockedUsers",
+                            progress = if (totalUsers > 0)
+                                blockedUsers.toFloat() / totalUsers
+                            else 0f,
+                            color = errorColor,
+                            trackColor = errorColor.copy(alpha = 0.15f),
+                            textColor = darkText
                         )
                     }
                 }
@@ -196,39 +276,40 @@ fun AdminReportBody() {
                 )
             }
 
-            item {
-                AdminCategoryReportCard(
-                    title = "Shopping",
-                    amount = "Rs. 2,40,000",
-                    percent = "40%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
-            }
+            if (categoryTotals.isEmpty()) {
+                item {
+                    Text(
+                        text = "No category data available.",
+                        color = grayText,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                items(categoryTotals.toList()) { item ->
 
-            item {
-                AdminCategoryReportCard(
-                    title = "Food",
-                    amount = "Rs. 1,80,000",
-                    percent = "30%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
-            }
+                    val percent =
+                        if (totalExpenseAmount > 0) {
+                            ((item.second / totalExpenseAmount) * 100).toInt()
+                        } else {
+                            0
+                        }
 
-            item {
-                AdminCategoryReportCard(
-                    title = "Travel",
-                    amount = "Rs. 1,20,000",
-                    percent = "20%",
-                    primaryColor = primaryColor,
-                    lightBlue = lightBlue
-                )
+                    AdminCategoryReportCard(
+                        title = item.first,
+                        amount = "Rs. ${item.second}",
+                        percent = "$percent%",
+                        progress = percent / 100f,
+                        primaryColor = primaryColor,
+                        surfaceColor = surfaceColor,
+                        darkText = darkText,
+                        grayText = grayText
+                    )
+                }
             }
 
             item {
                 Text(
-                    text = "Monthly Statistics",
+                    text = "Expense Category Chart",
                     color = darkText,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
@@ -239,42 +320,80 @@ fun AdminReportBody() {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp),
+                        .height(300.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White
+                        containerColor = surfaceColor
                     )
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.List,
-                            contentDescription = null,
-                            tint = primaryColor,
-                            modifier = Modifier.size(50.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Admin Chart Placeholder",
-                            color = darkText,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            text = "Monthly user and expense chart will be added later",
-                            color = grayText,
-                            fontSize = 13.sp
+                    if (categoryTotals.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No chart data available",
+                                color = grayText
+                            )
+                        }
+                    } else {
+                        AdminExpenseBarChart(
+                            categoryTotals = categoryTotals,
+                            textColor = darkText
                         )
                     }
                 }
             }
+
+            item {
+                Button(
+                    onClick = {
+                        val file = PdfHelper.createReportPdf(
+                            context = context,
+                            totalBudget = totalBudgets.toDouble(),
+                            totalExpense = totalExpenseAmount,
+                            saving = 0.0,
+                            categoryTotals = categoryTotals
+                        )
+
+                        if (file != null) {
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+
+                            val intent = Intent(Intent.ACTION_VIEW)
+                            intent.setDataAndType(uri, "application/pdf")
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+                            context.startActivity(intent)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(55.dp),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = primaryColor
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.List,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Download Admin Report",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
         }
     }
 }
@@ -325,7 +444,8 @@ fun AdminReportProgressRow(
     value: String,
     progress: Float,
     color: Color,
-    trackColor: Color
+    trackColor: Color,
+    textColor: Color
 ) {
     Column {
         Row(
@@ -334,7 +454,7 @@ fun AdminReportProgressRow(
         ) {
             Text(
                 text = title,
-                color = Color(0xFF1E1E1E),
+                color = textColor,
                 fontWeight = FontWeight.Bold
             )
 
@@ -348,7 +468,7 @@ fun AdminReportProgressRow(
         Spacer(modifier = Modifier.height(8.dp))
 
         LinearProgressIndicator(
-            progress = progress,
+            progress = progress.coerceIn(0f, 1f),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
@@ -364,22 +484,17 @@ fun AdminCategoryReportCard(
     title: String,
     amount: String,
     percent: String,
+    progress: Float,
     primaryColor: Color,
-    lightBlue: Color
+    surfaceColor: Color,
+    darkText: Color,
+    grayText: Color
 ) {
-    val progressValue =
-        when (percent) {
-            "40%" -> 0.4f
-            "30%" -> 0.3f
-            "20%" -> 0.2f
-            else -> 0.1f
-        }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = surfaceColor
         )
     ) {
         Column(
@@ -391,15 +506,15 @@ fun AdminCategoryReportCard(
             ) {
                 Column {
                     Text(
-                        text = title,
-                        color = Color(0xFF1E1E1E),
+                        text = title.ifEmpty { "Uncategorized" },
+                        color = darkText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
 
                     Text(
                         text = amount,
-                        color = Color(0xFF7A7A7A),
+                        color = grayText,
                         fontSize = 13.sp
                     )
                 }
@@ -414,14 +529,82 @@ fun AdminCategoryReportCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             LinearProgressIndicator(
-                progress = progressValue,
+                progress = progress.coerceIn(0f, 1f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(7.dp)
                     .clip(RoundedCornerShape(10.dp)),
                 color = primaryColor,
-                trackColor = lightBlue
+                trackColor = MaterialTheme.colorScheme.outlineVariant
             )
         }
     }
+}
+@Composable
+fun AdminExpenseBarChart(
+    categoryTotals: Map<String, Double>,
+    textColor: Color
+) {
+    AndroidView(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+            .padding(12.dp),
+        factory = { context ->
+            BarChart(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+
+                description.isEnabled = false
+                axisRight.isEnabled = false
+                legend.isEnabled = true
+
+                xAxis.position = XAxis.XAxisPosition.BOTTOM
+                xAxis.granularity = 1f
+                xAxis.setDrawGridLines(false)
+
+                setDrawGridBackground(false)
+            }
+        },
+        update = { chart ->
+
+            val entries = ArrayList<BarEntry>()
+            val labels = ArrayList<String>()
+
+            categoryTotals.entries.forEachIndexed { index, item ->
+                entries.add(
+                    BarEntry(
+                        index.toFloat(),
+                        item.value.toFloat()
+                    )
+                )
+
+                labels.add(item.key.ifEmpty { "Other" })
+            }
+
+            val dataSet = BarDataSet(entries, "Expenses")
+            dataSet.color = AndroidColor.rgb(74, 108, 247)
+            dataSet.valueTextSize = 12f
+            dataSet.valueTextColor = textColor.toArgb()
+
+            val data = BarData(dataSet)
+            data.barWidth = 0.6f
+
+            chart.data = data
+
+            chart.xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+            chart.xAxis.labelRotationAngle = -25f
+            chart.xAxis.textColor = textColor.toArgb()
+
+            chart.axisLeft.textColor = textColor.toArgb()
+            chart.axisLeft.gridColor = AndroidColor.GRAY
+
+            chart.legend.textColor = textColor.toArgb()
+
+            chart.animateY(800)
+            chart.invalidate()
+        }
+    )
 }

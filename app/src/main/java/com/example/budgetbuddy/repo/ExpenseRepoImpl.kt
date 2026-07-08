@@ -80,4 +80,25 @@ class ExpenseRepoImpl : ExpenseRepo {
                 callback(false, it.message ?: "Failed to delete expense")
             }
     }
+    override fun getAllExpenses(
+        callback: (Boolean, String, List<ExpenseModel>) -> Unit
+    ) {
+        expenseRef.get()
+            .addOnSuccessListener { snapshot ->
+
+                val expenses = mutableListOf<ExpenseModel>()
+
+                for (child in snapshot.children) {
+                    val expense = child.getValue(ExpenseModel::class.java)
+                    if (expense != null) {
+                        expenses.add(expense)
+                    }
+                }
+
+                callback(true, "Expenses fetched", expenses)
+            }
+            .addOnFailureListener {
+                callback(false, it.message ?: "Failed to fetch expenses", emptyList())
+            }
+    }
 }

@@ -62,4 +62,37 @@ class BudgetRepoImpl : BudgetRepo {
                 callback(false, it.message ?: "Failed to delete budget")
             }
     }
-}
+
+    override fun getAllBudgets(
+        callback: (Boolean, String, List<BudgetModel>) -> Unit
+    ) {
+
+        budgetRef.get()
+            .addOnSuccessListener { snapshot ->
+
+                val budgets = mutableListOf<BudgetModel>()
+
+                for (child in snapshot.children) {
+                    val budget =
+                        child.getValue(BudgetModel::class.java)
+
+                    if (budget != null) {
+                        budgets.add(budget)
+                    }
+                }
+
+                callback(
+                    true,
+                    "Budgets fetched successfully",
+                    budgets
+                )
+            }
+            .addOnFailureListener {
+
+                callback(
+                    false, it.message ?: "Failed to fetch budgets",
+                    emptyList()
+                )
+            }
+    }
+    }

@@ -29,4 +29,9 @@ class BudgetViewModel : ViewModel() {
     ) {
         repo.deleteBudget(budgetId, callback)
     }
+    fun getAllBudgets(
+        callback: (Boolean, String, List<BudgetModel>) -> Unit
+    ) {
+        repo.getAllBudgets(callback)
+    }
 }
