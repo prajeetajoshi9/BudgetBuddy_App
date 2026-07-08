@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -103,7 +104,8 @@ fun LoginBody() {
             onValueChange = { email = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
+                .height(60.dp)
+            .testTag("email"),
             placeholder = { Text("Enter Email") },
             leadingIcon = {
                 Icon(
@@ -149,7 +151,8 @@ fun LoginBody() {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
+                .height(60.dp)
+                .testTag("password"),
             placeholder = { Text("Enter Password") },
             shape = RoundedCornerShape(15.dp),
             colors = TextFieldDefaults.colors(
@@ -166,6 +169,7 @@ fun LoginBody() {
             text = "Forget Password?",
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("forgotPassword")
                 .clickable {
                     context.startActivity(
                         Intent(context, ForgetPasswordActivity::class.java)
@@ -217,7 +221,8 @@ fun LoginBody() {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(55.dp),
+                .height(55.dp)
+                .testTag("login"),
             shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = primaryColor
@@ -243,7 +248,9 @@ fun LoginBody() {
 
             Text(
                 text = "Sign up",
-                modifier = Modifier.clickable {
+                modifier = Modifier
+                    .testTag("signup")
+                    .clickable {
                     context.startActivity(
                         Intent(context, RegistrationActivity::class.java)
                     )

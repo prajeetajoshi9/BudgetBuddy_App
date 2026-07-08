@@ -16,158 +16,101 @@
         android:theme="@style/Theme.BudgetBuddy">
         <activity
             android:name=".view.AdminExpenseActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_expense"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.AdminBudgetActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_budget"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.AdminReportActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_report"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.NotificationActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="NotificationActivity"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.AdminManageUsersActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_manage_users"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
+
         <activity
             android:name=".view.AdminDashboardActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_admin_dashboard"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.UserProfileActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_user_profile"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.ReportActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_report"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.ExpenseActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="ExpenseActivity"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.BudgetActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_add_budget"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
         <activity
             android:name=".view.UserDashboardActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_dashboard"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.ForgetPasswordActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_forget_password"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.RegistrationActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_register"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.LoginActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".view.SplashActivity"
@@ -182,14 +125,10 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/app_name"
             android:theme="@style/Theme.BudgetBuddy">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
 

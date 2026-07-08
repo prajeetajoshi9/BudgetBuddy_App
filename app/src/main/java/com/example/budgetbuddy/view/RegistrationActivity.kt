@@ -35,6 +35,7 @@ import com.example.budgetbuddy.ui.theme.BudgetBuddyTheme
 import com.example.budgetbuddy.utils.ThemeManager
 import com.example.budgetbuddy.viewmodel.NotificationViewModel
 import com.example.budgetbuddy.viewmodel.UserViewModel
+import androidx.compose.ui.platform.testTag
 
 class RegistrationActivity : ComponentActivity() {
 
@@ -113,7 +114,8 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = fullName,
             onValueChange = { fullName = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .testTag("fullName"),
             placeholder = { Text("Full Name") },
             leadingIcon = {
                 Icon(Icons.Default.Person, contentDescription = null, tint = primaryColor)
@@ -132,7 +134,8 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = address,
             onValueChange = { address = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .testTag("address"),
             placeholder = { Text("Address") },
             leadingIcon = {
                 Icon(Icons.Default.Home, contentDescription = null, tint = primaryColor)
@@ -151,7 +154,9 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = contact,
             onValueChange = { contact = it },
-            modifier = Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .testTag("contact"),
             placeholder = { Text("Contact") },
             leadingIcon = {
                 Icon(Icons.Default.Phone, contentDescription = null, tint = primaryColor)
@@ -170,7 +175,8 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .testTag("email"),
             placeholder = { Text("Email") },
             leadingIcon = {
                 Icon(Icons.Default.Email, contentDescription = null, tint = primaryColor)
@@ -189,7 +195,8 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = createPassword,
             onValueChange = { createPassword = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .testTag("createPassword"),
             placeholder = { Text("Create Password") },
             leadingIcon = {
                 Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor)
@@ -221,7 +228,8 @@ fun RegistrationBody() {
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .testTag("confirmPassword"),
             placeholder = { Text("Confirm Password") },
             leadingIcon = {
                 Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor)
@@ -308,7 +316,8 @@ fun RegistrationBody() {
 
             modifier = Modifier
                 .fillMaxWidth()
-                .height(55.dp),
+                .height(55.dp)
+                .testTag("signupButton"),
             shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = primaryColor
@@ -334,7 +343,9 @@ fun RegistrationBody() {
 
             Text(
                 text = "Login",
-                modifier = Modifier.clickable {
+                modifier = Modifier
+                    .testTag("login")
+                    .clickable {
                     context.startActivity(Intent(context, LoginActivity::class.java))
                     activity?.finish()
                 },
